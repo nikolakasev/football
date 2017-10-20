@@ -1,0 +1,55 @@
+@startsalt
+{
+    Main
+    ==
+    [ My Team <&people>    ]
+    [ Play Schema <&transfer>]
+    [ Settings <&wrench>   ]
+    My Team
+    ==
+    { "Simon    " | [ Remove <&x> ] | 45 min}
+    { "Barry    " | [ Remove <&x> ] | 40 min}
+    { "Michael  " | [ Remove <&x> ] | 40 min}
+    { "Bruce    " | [ Remove <&x> ] | 40 min}
+    { "Jerry    " | [ Remove <&x> ] | 20 min}
+    { "Peter    " | [ Remove <&x> ] | 45 min}
+    { "         " | [ Add <&plus> ] }
+    ..
+    [ Confirm <&check>]
+    Play Schema
+    ==
+    Present today     | Keeper
+    [X] Simon   | [] Simon
+    [X] Barry   | [X] Barry
+    [X] Michael | [] Michael
+    [X] Bruce    | [] Bruce
+    [X] Jerry    | [] Jerry
+    [X] Peter    | [] Peter
+    ..
+    [ Play!  ]
+    Settings
+    ==
+    Game duration:  { "40" } minutes
+    Team of : { "5" } players
+    Change keeper every: { "10" } minutes
+    Change player every: { "5" } minutes
+    ..
+    [ Confirm <&check>]
+    Game underway
+    ==
+    Begin with:
+    Barry, Michael, Bruce, Jerry and Peter
+    First half schema:
+    5 min: | Simon <&transfer> Peter
+    10 min:| Peter <&transfer> Barry
+    15 min:| Barry <&transfer> Michael
+    Second half schema:
+    Begin with:
+    Barry, Michael, Jerry, Peter and Simon
+    5 min:| Simon <&transfer> Barry
+    10 min:| Barry <&transfer> Bruce
+    15 min:| Bruce <&transfer> Jerry
+    ..
+    [ End game <&bell>]
+}
+@endsalt
