@@ -7,9 +7,10 @@
     [ Settings <&wrench>   ]
     My Team
     ==
-    { "Simon    " | [ Remove <&x> ] | 45 min}
-    { "Barry    " | [ Remove <&x> ] | 40 min}
-    { "Michael  " | [ Remove <&x> ] | 40 min}
+    Played 3 games so far.
+    { "Simon    " | [ Remove <&x> ] | 45 min, kept once}
+    { "Barry    " | [ Remove <&x> ] | 40 min, kept twice}
+    { "Michael  " | [ Remove <&x> ] | 40 min, kept 3 times}
     { "Bruce    " | [ Remove <&x> ] | 40 min}
     { "Jerry    " | [ Remove <&x> ] | 20 min}
     { "Peter    " | [ Remove <&x> ] | 45 min}
@@ -37,15 +38,13 @@
     [ Confirm <&check>]
     Game underway
     ==
-    Begin with:
-    Barry, Michael, Bruce, Jerry and Peter
     First half schema:
+    Substitutes: Simon
     5 min: | Simon <&transfer> Peter
     10 min:| Peter <&transfer> Barry
     15 min:| Barry <&transfer> Michael
     Second half schema:
-    Begin with:
-    Barry, Michael, Jerry, Peter and Simon
+    Substitutes: Jerry
     5 min:| Simon <&transfer> Barry
     10 min:| Barry <&transfer> Bruce
     15 min:| Bruce <&transfer> Jerry
