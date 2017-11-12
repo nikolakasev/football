@@ -41,7 +41,7 @@ type alias Player =
 
 
 type alias Model =
-    { team : Team, playerToAdd : String, state : State }
+    { team : Team, playerToAdd : String, state : State, settings : Settings }
 
 
 type State
@@ -51,11 +51,29 @@ type State
     | GameUnderway
 
 
+type alias Settings =
+    { --in minutes
+      gameDuration : Int
+    , numberOfPlayers : Int
+
+    --how often to change the keeper
+    , changeKeeper : Int
+
+    --how ofter to change a player
+    , changePlayer : Int
+    }
+
+
+mySettings : Settings
+mySettings =
+    { gameDuration = 40, numberOfPlayers = 6, changeKeeper = 10, changePlayer = 5 }
+
+
 main : Program Never Model Msg
 main =
     Html.beginnerProgram
         { view = view
-        , model = { team = myTeam, playerToAdd = "", state = Menu }
+        , model = { team = myTeam, playerToAdd = "", state = Menu, settings = mySettings }
         , update = update
         }
 
