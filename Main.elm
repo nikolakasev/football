@@ -8,11 +8,12 @@ import Html.Attributes exposing (placeholder)
 type Msg
     = MyTeam
     | PlaySchema
-    | Settings
     | TeamConfirmed
     | PlayerNamed String
     | PlayerAdded
     | PlayerRemoved String
+    | Play
+    | GameEnded
 
 
 myTeam : Team
@@ -40,26 +41,50 @@ type alias Player =
 
 
 type alias Model =
-    { team : Team, playerToAdd : String }
+    { team : Team, playerToAdd : String, state : State }
+
+
+type State
+    = Menu
+    | Players
+    | Schema
+    | GameUnderway
 
 
 main : Program Never Model Msg
 main =
     Html.beginnerProgram
         { view = view
-        , model = { team = myTeam, playerToAdd = "" }
+        , model = { team = myTeam, playerToAdd = "", state = Menu }
         , update = update
         }
 
 
 view : Model -> Html Msg
 view model =
-    showPlayers model.team
+    case model.state of
+        Menu ->
+            showMainMenu
+
+        Players ->
+            showPlayers model.team
+
+        Schema ->
+            showPlaySchema model.team
+
+        GameUnderway ->
+            showGameUnderway model.team
 
 
 update : Msg -> Model -> Model
 update msg model =
     case msg of
+        MyTeam ->
+            { model | state = Players }
+
+        PlaySchema ->
+            { model | state = Schema }
+
         PlayerAdded ->
             { model
                 | team = addPlayerToTeam { name = model.playerToAdd, totalPlayTimeInMinutes = 0, timesKept = 0 } model.team
@@ -71,6 +96,12 @@ update msg model =
         PlayerRemoved name ->
             { model | team = List.filter (\p -> p.name /= name) model.team }
 
+        Play ->
+            { model | state = GameUnderway }
+
+        GameEnded ->
+            { model | state = Players }
+
         _ ->
             model
 
@@ -81,8 +112,6 @@ showMainMenu =
         [ Html.button [ onClick MyTeam ] [ text "My Team" ]
         , Html.br [] []
         , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
-        , Html.br [] []
-        , Html.button [ onClick Settings ] [ text "Settings" ]
         ]
 
 
@@ -94,7 +123,7 @@ showMyTeam =
         ]
 
 
-showPlayers : List Player -> Html Msg
+showPlayers : Team -> Html Msg
 showPlayers players =
     div []
         --render each player with most active in top
@@ -108,6 +137,23 @@ showPlayers players =
                , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
                ]
         )
+
+
+showPlaySchema : Team -> Html Msg
+showPlaySchema team =
+    div []
+        [ text "Present today:"
+        , Html.br [] []
+        , Html.button [ onClick Play ] [ text "Play!" ]
+        ]
+
+
+showGameUnderway : Team -> Html Msg
+showGameUnderway team =
+    div []
+        [ text "Game is underway"
+        , Html.button [ onClick GameEnded ] [ text "End Game" ]
+        ]
 
 
 playerToHtml : Player -> Html Msg
