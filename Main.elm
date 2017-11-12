@@ -1,13 +1,18 @@
 module Main exposing (..)
 
 import Html exposing (Html, text, div, button)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (placeholder)
 
 
 type Msg
     = MyTeam
     | PlaySchema
     | Settings
+    | TeamConfirmed
+    | PlayerNamed String
+    | PlayerAdded
+    | PlayerRemoved String
 
 
 myTeam : Team
@@ -34,9 +39,40 @@ type alias Player =
     }
 
 
-main : Html Msg
+type alias Model =
+    { team : Team, playerToAdd : String }
+
+
+main : Program Never Model Msg
 main =
-    showPlayers myTeam
+    Html.beginnerProgram
+        { view = view
+        , model = { team = myTeam, playerToAdd = "" }
+        , update = update
+        }
+
+
+view : Model -> Html Msg
+view model =
+    showPlayers model.team
+
+
+update : Msg -> Model -> Model
+update msg model =
+    case msg of
+        PlayerAdded ->
+            { model
+                | team = addPlayerToTeam { name = model.playerToAdd, totalPlayTimeInMinutes = 0, timesKept = 0 } model.team
+            }
+
+        PlayerNamed name ->
+            { model | playerToAdd = name }
+
+        PlayerRemoved name ->
+            { model | team = List.filter (\p -> p.name /= name) model.team }
+
+        _ ->
+            model
 
 
 showMainMenu : Html Msg
@@ -58,16 +94,23 @@ showMyTeam =
         ]
 
 
-showPlayers : List Player -> Html msg
+showPlayers : List Player -> Html Msg
 showPlayers players =
     div []
-        (List.sortBy .totalPlayTimeInMinutes players
+        --render each player with most active in top
+        ((List.sortBy .totalPlayTimeInMinutes players
             |> List.reverse
             |> List.map playerToHtml
+         )
+            ++ [ Html.input [ placeholder "Player name", onInput PlayerNamed ] []
+               , Html.button [ onClick PlayerAdded ] [ text "Add" ]
+               , Html.br [] []
+               , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
+               ]
         )
 
 
-playerToHtml : Player -> Html msg
+playerToHtml : Player -> Html Msg
 playerToHtml player =
     div []
         [ text
@@ -77,13 +120,16 @@ playerToHtml player =
                 , keptToString player.timesKept
                 ]
             )
+        , Html.button [ onClick (PlayerRemoved player.name) ] [ text "Remove" ]
         ]
 
 
 minutesToString : Int -> String
 minutesToString minutes =
-    if minutes <= 0 then
+    if minutes < 0 then
         ""
+    else if minutes == 0 then
+        "0 min."
     else if minutes < 60 then
         toString minutes ++ " min."
     else if minutes == 60 then
@@ -110,3 +156,13 @@ keptToString times =
 
         _ ->
             "kept " ++ toString times ++ " times"
+
+
+addPlayerToTeam : Player -> Team -> Team
+addPlayerToTeam player team =
+    case List.any (\p -> p.name == player.name) team of
+        True ->
+            team
+
+        False ->
+            player :: team
