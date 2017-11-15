@@ -6,7 +6,7 @@ import Html.Attributes exposing (placeholder)
 
 
 type Msg
-    = MyTeam
+    = SetupTeam
     | PlaySchema
     | TeamConfirmed
     | PlayerNamed String
@@ -14,19 +14,6 @@ type Msg
     | PlayerRemoved String
     | Play
     | GameEnded
-
-
-myTeam : Team
-myTeam =
-    [ { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 }
-    , { name = "Elias", totalPlayTimeInMinutes = 89, timesKept = 3 }
-    , { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }
-    , { name = "Mats", totalPlayTimeInMinutes = 12, timesKept = 2 }
-    , { name = "Kjeld", totalPlayTimeInMinutes = 43, timesKept = 1 }
-    , { name = "Jeroen", totalPlayTimeInMinutes = 54, timesKept = 0 }
-    , { name = "Rafael", totalPlayTimeInMinutes = 45, timesKept = 0 }
-    , { name = "Kaan", totalPlayTimeInMinutes = 23, timesKept = 1 }
-    ]
 
 
 type alias Team =
@@ -37,6 +24,14 @@ type alias Player =
     { name : String
     , totalPlayTimeInMinutes : Int
     , timesKept : Int
+    }
+
+
+type alias Substitute =
+    { atMinute : Int
+    , playerIn : Player
+    , playerOut : Maybe Player
+    , isKeeper : Bool
     }
 
 
@@ -62,6 +57,19 @@ type alias Settings =
     --how ofter to change a player
     , changePlayer : Int
     }
+
+
+myTeam : Team
+myTeam =
+    [ { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 }
+    , { name = "Elias", totalPlayTimeInMinutes = 89, timesKept = 3 }
+    , { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }
+    , { name = "Mats", totalPlayTimeInMinutes = 12, timesKept = 2 }
+    , { name = "Kjeld", totalPlayTimeInMinutes = 43, timesKept = 1 }
+    , { name = "Jeroen", totalPlayTimeInMinutes = 54, timesKept = 0 }
+    , { name = "Rafael", totalPlayTimeInMinutes = 45, timesKept = 0 }
+    , { name = "Kaan", totalPlayTimeInMinutes = 23, timesKept = 1 }
+    ]
 
 
 mySettings : Settings
@@ -97,7 +105,7 @@ view model =
 update : Msg -> Model -> Model
 update msg model =
     case msg of
-        MyTeam ->
+        SetupTeam ->
             { model | state = Players }
 
         PlaySchema ->
@@ -127,7 +135,7 @@ update msg model =
 showMainMenu : Html Msg
 showMainMenu =
     div []
-        [ Html.button [ onClick MyTeam ] [ text "My Team" ]
+        [ Html.button [ onClick SetupTeam ] [ text "My Team" ]
         , Html.br [] []
         , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
         ]
@@ -230,3 +238,39 @@ addPlayerToTeam player team =
 
         False ->
             player :: team
+
+
+
+-- takes settings, the team and the current selection: computes the play schema and updates the time each player has played
+
+
+teamPlays : Settings -> Team -> List Player -> ( List Substitute, Team )
+teamPlays settings team players =
+    ( [], [] )
+
+
+keeperPlays : Settings -> List Player -> List Substitute
+keeperPlays settings players =
+    let
+        keepersNeeded =
+            settings.gameDuration // settings.changeKeeper
+    in
+        List.sortBy .timesKept players
+            |> List.take keepersNeeded
+            |> List.indexedMap (\i player -> ( i * settings.changeKeeper, player ))
+            |> flip keepers []
+
+
+keepers : List ( Int, Player ) -> List Substitute -> List Substitute
+keepers players substitutes =
+    case players of
+        [] ->
+            substitutes
+
+        h :: t ->
+            case substitutes of
+                [] ->
+                    keepers t ({ atMinute = Tuple.first h, playerIn = Tuple.second h, playerOut = Nothing, isKeeper = True } :: substitutes)
+
+                s :: _ ->
+                    keepers t ({ atMinute = Tuple.first h, playerIn = Tuple.second h, playerOut = Just s.playerIn, isKeeper = True } :: substitutes)
