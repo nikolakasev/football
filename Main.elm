@@ -1,19 +1,21 @@
 module Main exposing (..)
 
-import Html exposing (Html, text, div, button)
+import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (placeholder)
+import Html.Attributes exposing (..)
 
 
 type Msg
     = SetupTeam
     | PlaySchema
-    | TeamConfirmed
+    | TeamConfirmedmyste
     | PlayerNamed String
     | PlayerAdded
     | PlayerRemoved String
+    | PlayerPresent String
     | Play
     | GameEnded
+    | GoToMain
 
 
 type alias Team =
@@ -128,6 +130,9 @@ update msg model =
         GameEnded ->
             { model | state = Players }
 
+        GoToMain ->
+            { model | state = Menu }
+
         _ ->
             model
 
@@ -157,10 +162,10 @@ showPlayers players =
             |> List.reverse
             |> List.map playerToHtml
          )
-            ++ [ Html.input [ placeholder "Player name", onInput PlayerNamed ] []
-               , Html.button [ onClick PlayerAdded ] [ text "Add" ]
-               , Html.br [] []
-               , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
+            ++ [ input [ placeholder "Player name", onInput PlayerNamed ] []
+               , button [ onClick PlayerAdded ] [ text "Add" ]
+               , br [] []
+               , button [ onClick PlaySchema ] [ text "Play Schema" ]
                ]
         )
 
@@ -169,8 +174,10 @@ showPlaySchema : Team -> Html Msg
 showPlaySchema team =
     div []
         [ text "Present today:"
-        , Html.br [] []
-        , Html.button [ onClick Play ] [ text "Play!" ]
+        , br [] []
+        , playingToday team
+        , cancel
+        , button [ onClick Play ] [ text "Play!" ]
         ]
 
 
@@ -178,7 +185,7 @@ showGameUnderway : Team -> Html Msg
 showGameUnderway team =
     div []
         [ text "Game is underway"
-        , Html.button [ onClick GameEnded ] [ text "End Game" ]
+        , button [ onClick GameEnded ] [ text "End Game" ]
         ]
 
 
@@ -192,7 +199,7 @@ playerToHtml player =
                 , keptToString player.timesKept
                 ]
             )
-        , Html.button [ onClick (PlayerRemoved player.name) ] [ text "Remove" ]
+        , button [ onClick (PlayerRemoved player.name) ] [ text "Remove" ]
         ]
 
 
@@ -249,6 +256,51 @@ teamPlays settings team players =
     ( [], [] )
 
 
+computeSubstitutions : Settings -> List Int -> Team -> List Substitute
+computeSubstitutions settings intList team =
+    []
+
+
+updatePlayTime : Team -> List Substitute -> Team
+updatePlayTime team substitutes =
+    []
+
+
+substituteAtMinute : Settings -> List Int
+substituteAtMinute settings =
+    let
+        playerChangeAtMinute =
+            List.range 0 (settings.gameDuration // settings.changePlayer)
+                |> List.map (\t -> t * settings.changePlayer)
+
+        keeperChangeAtMinute =
+            List.range 0 (settings.gameDuration // settings.changeKeeper)
+                |> List.map (\t -> t * settings.changeKeeper)
+    in
+        playerChangeAtMinute
+            ++ keeperChangeAtMinute
+            -- might have to substitue a player and the keeper at the same minute
+            |> flip distinct []
+            |> List.sort
+            -- changing at the last minute of the game doesn't make sense
+            |> List.filter (\t -> t /= settings.gameDuration)
+
+
+distinct : List Int -> List Int -> List Int
+distinct ints acc =
+    case ints of
+        [] ->
+            acc
+
+        h :: t ->
+            case List.member h acc of
+                True ->
+                    distinct t acc
+
+                False ->
+                    distinct t (h :: acc)
+
+
 keeperPlays : Settings -> List Player -> List Substitute
 keeperPlays settings players =
     let
@@ -274,3 +326,26 @@ keepers players substitutes =
 
                 s :: _ ->
                     keepers t ({ atMinute = Tuple.first h, playerIn = Tuple.second h, playerOut = Just s.playerIn, isKeeper = True } :: substitutes)
+
+
+playingToday : Team -> Html Msg
+playingToday team =
+    div []
+        (List.map
+            (\p -> checkbox (PlayerPresent p.name) p.name)
+            team
+        )
+
+
+checkbox : Msg -> String -> Html Msg
+checkbox msg name =
+    label []
+        [ input [ type_ "checkbox", onClick msg ] []
+        , text name
+        ]
+
+
+cancel : Html Msg
+cancel =
+    -- TODO: is this the best way to navigate?
+    button [ onClick GoToMain ] [ text "Cancel" ]
