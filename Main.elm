@@ -12,7 +12,8 @@ type Msg
     | PlayerNamed String
     | PlayerAdded
     | PlayerRemoved String
-    | PlayerPresent String
+      -- this gets emitted from the checkbox
+    | PlayerPresenseChanged String
     | Play
     | GameEnded
     | GoToMain
@@ -38,7 +39,7 @@ type alias Substitute =
 
 
 type alias Model =
-    { team : Team, playerToAdd : String, state : State, settings : Settings }
+    { team : Team, present : List Player, playerToAdd : String, state : State, settings : Settings }
 
 
 type State
@@ -83,7 +84,7 @@ main : Program Never Model Msg
 main =
     Html.beginnerProgram
         { view = view
-        , model = { team = myTeam, playerToAdd = "", state = Menu, settings = mySettings }
+        , model = { team = myTeam, present = [], playerToAdd = "", state = Menu, settings = mySettings }
         , update = update
         }
 
@@ -132,6 +133,9 @@ update msg model =
 
         GoToMain ->
             { model | state = Menu }
+
+        PlayerPresenseChanged name ->
+            { model | present = updatePlayerPresense name model.team model.present }
 
         _ ->
             model
@@ -247,6 +251,18 @@ addPlayerToTeam player team =
             player :: team
 
 
+updatePlayerPresense : String -> Team -> List Player -> List Player
+updatePlayerPresense playerName team present =
+    case List.any (\p -> p.name == playerName) present of
+        --remove of already present
+        True ->
+            List.filter (\p -> p.name /= playerName) present
+
+        --add if not present
+        False ->
+            present ++ List.filter (\p -> p.name == playerName) team
+
+
 
 -- takes settings, the team and the current selection: computes the play schema and updates the time each player has played
 
@@ -332,7 +348,7 @@ playingToday : Team -> Html Msg
 playingToday team =
     div []
         (List.map
-            (\p -> checkbox (PlayerPresent p.name) p.name)
+            (\p -> checkbox (PlayerPresenseChanged p.name) p.name)
             team
         )
 
