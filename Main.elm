@@ -33,8 +33,8 @@ type alias Player =
 type alias Substitute =
     { atMinute : Int
     , playerIn : Player
-    , playerOut : Maybe Player
-    , isKeeper : Bool
+    , playerOut : Player
+    , timePlayed : Int
     }
 
 
@@ -174,12 +174,12 @@ showPlayers players =
         )
 
 
-showPlaySchema : Team -> Html Msg
-showPlaySchema team =
+showPlaySchema : List Player -> Html Msg
+showPlaySchema players =
     div []
         [ text "Present today:"
         , br [] []
-        , playingToday team
+        , presentToday players
         , cancel
         , button [ onClick Play ] [ text "Play!" ]
         ]
@@ -254,7 +254,7 @@ addPlayerToTeam player team =
 updatePlayerPresense : String -> Team -> List Player -> List Player
 updatePlayerPresense playerName team present =
     case List.any (\p -> p.name == playerName) present of
-        --remove of already present
+        --remove if already present
         True ->
             List.filter (\p -> p.name /= playerName) present
 
@@ -269,17 +269,49 @@ updatePlayerPresense playerName team present =
 
 teamPlays : Settings -> Team -> List Player -> ( List Substitute, Team )
 teamPlays settings team players =
-    ( [], [] )
+    let
+        substitutes =
+            computeSubstitutions settings (substituteAtMinute settings) team
+    in
+        ( substitutes, updatePlayTimes team substitutes )
 
 
 computeSubstitutions : Settings -> List Int -> Team -> List Substitute
-computeSubstitutions settings intList team =
+computeSubstitutions settings times team =
     []
 
 
-updatePlayTime : Team -> List Substitute -> Team
-updatePlayTime team substitutes =
-    []
+updatePlayTimes : Team -> List Substitute -> Team
+updatePlayTimes team substitutes =
+    case substitutes of
+        [] ->
+            team
+
+        h :: t ->
+            updatePlayTimes (updatePlayerTime team h.playerOut h.timePlayed) t
+
+
+
+{-
+   TODO how to write a generic function that takes a list of records and two properties to search for and update?
+   In this case player.name and player.totalPlayTimeInMinutes
+-}
+
+
+updatePlayerTime : Team -> Player -> Int -> Team
+updatePlayerTime team player time =
+    let
+        p =
+            List.filter (\p -> p.name == player.name) team
+                |> List.head
+    in
+        case p of
+            Just y ->
+                { y | totalPlayTimeInMinutes = y.totalPlayTimeInMinutes + time }
+                    :: List.filter (\p -> p.name /= y.name) team
+
+            Nothing ->
+                team
 
 
 substituteAtMinute : Settings -> List Int
@@ -317,39 +349,12 @@ distinct ints acc =
                     distinct t (h :: acc)
 
 
-keeperPlays : Settings -> List Player -> List Substitute
-keeperPlays settings players =
-    let
-        keepersNeeded =
-            settings.gameDuration // settings.changeKeeper
-    in
-        List.sortBy .timesKept players
-            |> List.take keepersNeeded
-            |> List.indexedMap (\i player -> ( i * settings.changeKeeper, player ))
-            |> flip keepers []
-
-
-keepers : List ( Int, Player ) -> List Substitute -> List Substitute
-keepers players substitutes =
-    case players of
-        [] ->
-            substitutes
-
-        h :: t ->
-            case substitutes of
-                [] ->
-                    keepers t ({ atMinute = Tuple.first h, playerIn = Tuple.second h, playerOut = Nothing, isKeeper = True } :: substitutes)
-
-                s :: _ ->
-                    keepers t ({ atMinute = Tuple.first h, playerIn = Tuple.second h, playerOut = Just s.playerIn, isKeeper = True } :: substitutes)
-
-
-playingToday : Team -> Html Msg
-playingToday team =
+presentToday : List Player -> Html Msg
+presentToday players =
     div []
         (List.map
             (\p -> checkbox (PlayerPresenseChanged p.name) p.name)
-            team
+            players
         )
 
 
