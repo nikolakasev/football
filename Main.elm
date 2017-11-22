@@ -3,6 +3,7 @@ module Main exposing (..)
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (..)
+import List.Extra exposing (groupWhile)
 
 
 type Msg
@@ -30,12 +31,22 @@ type alias Player =
     }
 
 
-type alias Substitute =
+type alias PlayJournal =
     { atMinute : Int
-    , playerIn : Player
-    , playerOut : Player
-    , timePlayed : Int
+    , keeper : Player
+    , substitutes : List Player
+    , playing : List Player
     }
+
+
+type alias Substitute =
+    { atMinute : Int, substituteWhom : SubstituteType }
+
+
+type SubstituteType
+    = Playr
+    | Keeper
+    | Both
 
 
 type alias Model =
@@ -267,28 +278,24 @@ updatePlayerPresense playerName team present =
 -- takes settings, the team and the current selection: computes the play schema and updates the time each player has played
 
 
-teamPlays : Settings -> Team -> List Player -> ( List Substitute, Team )
-teamPlays settings team players =
+teamPlays : Settings -> Team -> List Player -> ( List PlayJournal, Team )
+teamPlays settings team present =
     let
         substitutes =
-            computeSubstitutions settings (substituteAtMinute settings) team
+            computeSubstitutions settings (substituteAtMinute settings) present []
     in
-        ( substitutes, updatePlayTimes team substitutes )
+        ( substitutes, [] )
 
 
-computeSubstitutions : Settings -> List Int -> Team -> List Substitute
-computeSubstitutions settings times team =
-    []
+computeSubstitutions : Settings -> List Substitute -> List Player -> List PlayJournal -> List PlayJournal
+computeSubstitutions settings times present acc =
+    case List.length present < settings.numberOfPlayers of
+        --no substitutions can be computed if there are not enough players
+        True ->
+            []
 
-
-updatePlayTimes : Team -> List Substitute -> Team
-updatePlayTimes team substitutes =
-    case substitutes of
-        [] ->
-            team
-
-        h :: t ->
-            updatePlayTimes (updatePlayerTime team h.playerOut h.timePlayed) t
+        False ->
+            []
 
 
 
@@ -314,39 +321,37 @@ updatePlayerTime team player time =
                 team
 
 
-substituteAtMinute : Settings -> List Int
+substituteAtMinute : Settings -> List Substitute
 substituteAtMinute settings =
     let
         playerChangeAtMinute =
             List.range 0 (settings.gameDuration // settings.changePlayer)
-                |> List.map (\t -> t * settings.changePlayer)
+                |> List.map (\t -> { atMinute = t * settings.changePlayer, substituteWhom = Playr })
 
         keeperChangeAtMinute =
             List.range 0 (settings.gameDuration // settings.changeKeeper)
-                |> List.map (\t -> t * settings.changeKeeper)
+                |> List.map (\t -> { atMinute = t * settings.changeKeeper, substituteWhom = Keeper })
     in
         playerChangeAtMinute
             ++ keeperChangeAtMinute
-            -- might have to substitue a player and the keeper at the same minute
-            |> flip distinct []
-            |> List.sort
-            -- changing at the last minute of the game doesn't make sense
-            |> List.filter (\t -> t /= settings.gameDuration)
+            |> List.sortBy .atMinute
+            |> List.Extra.groupWhile (\x y -> x.atMinute == y.atMinute)
+            |> List.map playerKeeperOrBoth
+            --remove any Nothing occurrences
+            |> List.filterMap identity
 
 
-distinct : List Int -> List Int -> List Int
-distinct ints acc =
-    case ints of
+playerKeeperOrBoth : List Substitute -> Maybe Substitute
+playerKeeperOrBoth tuples =
+    case tuples of
         [] ->
-            acc
+            Nothing
 
-        h :: t ->
-            case List.member h acc of
-                True ->
-                    distinct t acc
+        head :: [] ->
+            Just { atMinute = head.atMinute, substituteWhom = head.substituteWhom }
 
-                False ->
-                    distinct t (h :: acc)
+        head :: tail ->
+            Just { atMinute = head.atMinute, substituteWhom = Both }
 
 
 presentToday : List Player -> Html Msg
