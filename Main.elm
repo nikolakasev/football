@@ -31,6 +31,11 @@ type alias Player =
     }
 
 
+defaultPlayer : Player
+defaultPlayer =
+    { name = "John Doe", totalPlayTimeInMinutes = 707, timesKept = 707 }
+
+
 type alias PlayJournal =
     { atMinute : Int
     , keeper : Player
@@ -289,19 +294,49 @@ teamPlays settings team present =
 
 computeSubstitutions : Settings -> List Substitute -> List Player -> List PlayJournal -> List PlayJournal
 computeSubstitutions settings times present acc =
-    case List.length present < settings.numberOfPlayers of
-        --no substitutions can be computed if there are not enough players
-        True ->
-            []
+    case times of
+        [] ->
+            acc
 
-        False ->
-            []
+        head :: tail ->
+            let
+                playersExtra =
+                    List.length present - settings.numberOfPlayers
+
+                rankedForPlayTimeDescending =
+                    List.sortBy .totalPlayTimeInMinutes present
+                        |> List.reverse
+
+                substitutes =
+                    rankedForPlayTimeDescending
+                        |> List.take playersExtra
+
+                playing =
+                    rankedForPlayTimeDescending
+                        |> List.drop playersExtra
+                        --so that the keeper chosen is the player with the least amount of play time
+                        |> List.reverse
+
+                keeper =
+                    List.head playing
+                        |> Maybe.withDefault defaultPlayer
+
+                journal =
+                    { atMinute = head.atMinute, keeper = keeper, substitutes = substitutes, playing = playing }
+            in
+                computeSubstitutions settings tail present (journal :: acc)
 
 
 
 {-
-   TODO how to write a generic function that takes a list of records and two properties to search for and update?
-   In this case player.name and player.totalPlayTimeInMinutes
+   type alias PlayJournal =
+       { atMinute : Int
+       , keeper : Player
+       , substitutes : List Player
+       , playing : List Player
+       }
+      TODO how to write a generic function that takes a list of records and two properties to search for and update?
+      In this case player.name and player.totalPlayTimeInMinutes
 -}
 
 
