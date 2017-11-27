@@ -327,27 +327,19 @@ computeSubstitutions settings times present acc =
                 computeSubstitutions settings tail present (journal :: acc)
 
 
+updatePlayersTime : Team -> Int -> Team
+updatePlayersTime players time =
+    let
+        update =
+            \players time acc ->
+                case players of
+                    [] ->
+                        acc
 
-{-
-   type alias PlayJournal =
-       { atMinute : Int
-       , keeper : Player
-       , substitutes : List Player
-       , playing : List Player
-       }
-      TODO how to write a generic function that takes a list of records and two properties to search for and update?
-      In this case player.name and player.totalPlayTimeInMinutes
--}
-
-
-updatePlayersTime : Team -> Int -> Team -> Team
-updatePlayersTime players time acc =
-    case players of
-        [] ->
-            acc
-
-        head :: tail ->
-            updatePlayersTime tail time ({ head | totalPlayTimeInMinutes = head.totalPlayTimeInMinutes + time } :: acc)
+                    head :: tail ->
+                        update tail time ({ head | totalPlayTimeInMinutes = head.totalPlayTimeInMinutes + time } :: acc)
+    in
+        update players time []
 
 
 substituteAtMinute : Settings -> List Substitute
