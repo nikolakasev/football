@@ -340,20 +340,14 @@ computeSubstitutions settings times present acc =
 -}
 
 
-updatePlayerTime : Team -> Player -> Int -> Team
-updatePlayerTime team player time =
-    let
-        p =
-            List.filter (\p -> p.name == player.name) team
-                |> List.head
-    in
-        case p of
-            Just y ->
-                { y | totalPlayTimeInMinutes = y.totalPlayTimeInMinutes + time }
-                    :: List.filter (\p -> p.name /= y.name) team
+updatePlayersTime : Team -> Int -> Team -> Team
+updatePlayersTime players time acc =
+    case players of
+        [] ->
+            acc
 
-            Nothing ->
-                team
+        head :: tail ->
+            updatePlayersTime tail time ({ head | totalPlayTimeInMinutes = head.totalPlayTimeInMinutes + time } :: acc)
 
 
 substituteAtMinute : Settings -> List Substitute
