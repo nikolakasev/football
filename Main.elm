@@ -128,7 +128,7 @@ update msg model =
             { model | state = Players }
 
         PlaySchema ->
-            { model | state = Schema }
+            { model | state = Schema, present = [] }
 
         PlayerAdded ->
             { model
