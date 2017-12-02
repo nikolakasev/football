@@ -287,21 +287,31 @@ teamPlays : Settings -> Team -> List Player -> ( List PlayJournal, Team )
 teamPlays settings team present =
     let
         substitutes =
-            computeSubstitutions settings (substituteAtMinute settings) present []
+            computePlayJournal settings (substituteAtMinute settings) present
     in
         ( substitutes, [] )
 
 
-computeSubstitutions : Settings -> List Substitute -> List Player -> List PlayJournal -> List PlayJournal
-computeSubstitutions settings times present acc =
-    case times of
-        [] ->
-            acc
+computePlayJournal : Settings -> List Substitute -> List Player -> List PlayJournal
+computePlayJournal settings times present =
+    let
+        choose =
+            \s t p acc ->
+                []
+    in
+        choose settings times present []
 
-        head :: tail ->
+
+choosePlayersAndSubstitutes : List Player -> Int -> ( List Player, List Player )
+choosePlayersAndSubstitutes present numberOfPlayers =
+    case present of
+        [] ->
+            ( [], [] )
+
+        _ ->
             let
                 playersExtra =
-                    List.length present - settings.numberOfPlayers
+                    List.length present - numberOfPlayers
 
                 rankedForPlayTimeDescending =
                     List.sortBy .totalPlayTimeInMinutes present
@@ -314,17 +324,9 @@ computeSubstitutions settings times present acc =
                 playing =
                     rankedForPlayTimeDescending
                         |> List.drop playersExtra
-                        --so that the keeper chosen is the player with the least amount of play time
                         |> List.reverse
-
-                keeper =
-                    List.head playing
-                        |> Maybe.withDefault defaultPlayer
-
-                journal =
-                    { atMinute = head.atMinute, keeper = keeper, substitutes = substitutes, playing = playing }
             in
-                computeSubstitutions settings tail present (journal :: acc)
+                ( playing, substitutes )
 
 
 updatePlayersTime : Team -> Int -> Team
