@@ -295,17 +295,36 @@ updatePlayerPresense playerName team present =
             present ++ List.filter (\p -> p.name == playerName) team
 
 
-
--- takes settings, the team and the current selection: computes the play schema and updates the time each player has played
-
-
-teamPlays : Settings -> Team -> List Player -> ( List PlayJournal, Team )
-teamPlays settings team present =
+teamPlays : Settings -> List Player -> List Player
+teamPlays settings present =
     let
         substitutes =
             computePlayJournal settings.numberOfPlayers (substituteAtMinute settings) present
+
+        lastJournal =
+            List.head substitutes |> Maybe.withDefault defaultJournal
+
+        minutesPlayedAfterLastSubstitution =
+            settings.gameDuration - lastJournal.atMinute
+
+        team =
+            updatePlayersTime (lastJournal.keeper :: lastJournal.playing) minutesPlayedAfterLastSubstitution
+                ++ lastJournal.substitutes
     in
-        ( substitutes, [] )
+        team
+
+
+p : List PlayJournal
+p =
+    [ { atMinute = 35, keeper = { name = "Mats", totalPlayTimeInMinutes = 47, timesKept = 6 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 58, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 78, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 80, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 89, timesKept = 0 }, { name = "Kaya", totalPlayTimeInMinutes = 105, timesKept = 0 } ], substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 110, timesKept = 4 }, { name = "Elias", totalPlayTimeInMinutes = 109, timesKept = 3 } ] }
+    , { atMinute = 30, keeper = { name = "Mats", totalPlayTimeInMinutes = 42, timesKept = 6 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 53, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 73, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 75, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 84, timesKept = 0 }, { name = "Rein", totalPlayTimeInMinutes = 105, timesKept = 4 } ], substitutes = [ { name = "Elias", totalPlayTimeInMinutes = 109, timesKept = 3 }, { name = "Kaya", totalPlayTimeInMinutes = 105, timesKept = 0 } ] }
+    , { atMinute = 25, keeper = { name = "Mats", totalPlayTimeInMinutes = 37, timesKept = 5 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 48, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 68, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 70, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 79, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 104, timesKept = 3 } ], substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 105, timesKept = 4 }, { name = "Kaya", totalPlayTimeInMinutes = 105, timesKept = 0 } ] }
+    , { atMinute = 20, keeper = { name = "Mats", totalPlayTimeInMinutes = 32, timesKept = 5 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 43, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 63, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 65, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 74, timesKept = 0 }, { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 } ], substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 105, timesKept = 4 }, { name = "Elias", totalPlayTimeInMinutes = 104, timesKept = 3 } ] }
+    , { atMinute = 15, keeper = { name = "Mats", totalPlayTimeInMinutes = 27, timesKept = 4 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 38, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 58, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 60, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 69, timesKept = 0 }, { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 } ], substitutes = [ { name = "Elias", totalPlayTimeInMinutes = 104, timesKept = 3 }, { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 } ] }
+    , { atMinute = 10, keeper = { name = "Mats", totalPlayTimeInMinutes = 22, timesKept = 4 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 33, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 53, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 55, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 64, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 99, timesKept = 3 } ], substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }, { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 } ] }
+    , { atMinute = 5, keeper = { name = "Mats", totalPlayTimeInMinutes = 17, timesKept = 3 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 28, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 48, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 50, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 59, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 94, timesKept = 3 } ], substitutes = [ { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 }, { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 } ] }
+    , { atMinute = 0, keeper = { name = "Mats", totalPlayTimeInMinutes = 12, timesKept = 3 }, playing = [ { name = "Kaan", totalPlayTimeInMinutes = 23, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 43, timesKept = 1 }, { name = "Rafael", totalPlayTimeInMinutes = 45, timesKept = 0 }, { name = "Jeroen", totalPlayTimeInMinutes = 54, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 89, timesKept = 3 } ], substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }, { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 } ] }
+    ]
 
 
 computePlayJournal : Int -> List Substitute -> List Player -> List PlayJournal
@@ -498,6 +517,8 @@ substituteAtMinute settings =
             |> List.map playerKeeperOrBoth
             --remove any Nothing occurrences
             |> List.filterMap identity
+            --remove occurences that are at the exact end of the game
+            |> List.filter (\s -> s.atMinute /= settings.gameDuration)
 
 
 playerKeeperOrBoth : List Substitute -> Maybe Substitute
