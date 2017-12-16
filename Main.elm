@@ -131,10 +131,10 @@ view model =
             showPlayers model.team
 
         Schema ->
-            showPlaySchema model.team
+            showPlayersPresent model.team
 
         GameUnderway ->
-            showGameUnderway model.team
+            showGameUnderway model.present
 
 
 update : Msg -> Model -> Model
@@ -161,7 +161,7 @@ update msg model =
             { model | state = GameUnderway }
 
         GameEnded ->
-            { model | state = Players }
+            { model | state = Players, present = [] }
 
         GoToMain ->
             { model | state = Menu }
@@ -206,8 +206,8 @@ showPlayers players =
         )
 
 
-showPlaySchema : List Player -> Html Msg
-showPlaySchema players =
+showPlayersPresent : List Player -> Html Msg
+showPlayersPresent players =
     div []
         [ text "Present today:"
         , br [] []
@@ -217,12 +217,63 @@ showPlaySchema players =
         ]
 
 
-showGameUnderway : Team -> Html Msg
-showGameUnderway team =
-    div []
-        [ text "Game is underway"
-        , button [ onClick GameEnded ] [ text "End Game" ]
-        ]
+showGameUnderway : List Player -> Html Msg
+showGameUnderway present =
+    let
+        firstHalfEndsAt =
+            mySettings.gameDuration // 2
+
+        ( firstHalf, secondHalf ) =
+            List.partition
+                (\j -> j.atMinute <= firstHalfEndsAt)
+                (computePlayJournal
+                    mySettings.numberOfPlayers
+                    (substituteAtMinute mySettings)
+                    present
+                )
+    in
+        div []
+            [ text ("Game is underway " ++ toString (List.length present))
+            , br [] []
+            , text "First half schema:"
+            , showPlaySchemaFor firstHalf
+            , br [] []
+            , text "Second half schema:"
+            , showPlaySchemaFor secondHalf
+            , button [ onClick GameEnded ] [ text "End Game" ]
+            ]
+
+
+showPlaySchemaFor : List PlayJournal -> Html Msg
+showPlaySchemaFor journal =
+    let
+        sorted =
+            List.sortBy .atMinute journal
+
+        --destructure the journal record
+        { keeper, substitutes } =
+            List.head sorted
+                |> Maybe.withDefault defaultJournal
+    in
+        div []
+            [ text ("Keeper: " ++ keeper.name)
+            , br [] []
+            , text
+                ("Substitutes: "
+                    ++ String.join ", "
+                        (List.map
+                            .name
+                            substitutes
+                        )
+                )
+            , br [] []
+            , showPerMinute journal
+            ]
+
+
+showPerMinute : List PlayJournal -> Html msg
+showPerMinute substitutes =
+    text ""
 
 
 playerToHtml : Player -> Html Msg
