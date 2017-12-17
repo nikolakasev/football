@@ -104,6 +104,8 @@ newTeam =
     , { name = "Mats", totalPlayTimeInMinutes = 0, timesKept = 0 }
     , { name = "Kjeld", totalPlayTimeInMinutes = 0, timesKept = 0 }
     , { name = "Jeroen", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }
     ]
 
 
@@ -220,32 +222,23 @@ showPlayersPresent players =
 showGameUnderway : List Player -> Html Msg
 showGameUnderway present =
     let
-        firstHalfEndsAt =
-            mySettings.gameDuration // 2
-
-        ( firstHalf, secondHalf ) =
-            List.partition
-                (\j -> j.atMinute <= firstHalfEndsAt)
-                (computePlayJournal
-                    mySettings.numberOfPlayers
-                    (substituteAtMinute mySettings)
-                    present
-                )
+        journal =
+            computePlayJournal
+                mySettings.numberOfPlayers
+                (substituteAtMinute mySettings)
+                present
     in
         div []
             [ text ("Game is underway " ++ toString (List.length present))
             , br [] []
-            , text "First half schema:"
-            , showPlaySchemaFor firstHalf
+            , showPlaySchema journal
             , br [] []
-            , text "Second half schema:"
-            , showPlaySchemaFor secondHalf
             , button [ onClick GameEnded ] [ text "End Game" ]
             ]
 
 
-showPlaySchemaFor : List PlayJournal -> Html Msg
-showPlaySchemaFor journal =
+showPlaySchema : List PlayJournal -> Html Msg
+showPlaySchema journal =
     let
         sorted =
             List.sortBy .atMinute journal
