@@ -184,14 +184,6 @@ showMainMenu =
         ]
 
 
-showMyTeam : Html Msg
-showMyTeam =
-    div []
-        [ div [] [ text "My Team" ]
-        , div [] [ text "here come the players" ]
-        ]
-
-
 showPlayers : Team -> Html Msg
 showPlayers players =
     div []
@@ -242,31 +234,9 @@ showPlaySchema journal =
     let
         sorted =
             List.sortBy .atMinute journal
-
-        --destructure the journal record
-        { keeper, substitutes } =
-            List.head sorted
-                |> Maybe.withDefault defaultJournal
     in
         div []
-            [ text ("Keeper: " ++ keeper.name)
-            , br [] []
-            , text
-                ("Substitutes: "
-                    ++ String.join ", "
-                        (List.map
-                            .name
-                            substitutes
-                        )
-                )
-            , br [] []
-            , showPerMinute journal
-            ]
-
-
-showPerMinute : List PlayJournal -> Html msg
-showPerMinute substitutes =
-    text ""
+            []
 
 
 playerToHtml : Player -> Html Msg
