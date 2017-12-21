@@ -127,16 +127,16 @@ view : Model -> Html Msg
 view model =
     case model.state of
         Menu ->
-            showMainMenu
+            mainMenuView
 
         Players ->
-            showPlayers model.team
+            playersView model.team
 
         Schema ->
-            showPlayersPresent model.team
+            playersPresentView model.team
 
         GameUnderway ->
-            showGameUnderway model.present
+            gameUnderwayView model.present
 
 
 update : Msg -> Model -> Model
@@ -175,8 +175,8 @@ update msg model =
             model
 
 
-showMainMenu : Html Msg
-showMainMenu =
+mainMenuView : Html Msg
+mainMenuView =
     div []
         [ Html.button [ onClick SetupTeam ] [ text "My Team" ]
         , Html.br [] []
@@ -184,13 +184,13 @@ showMainMenu =
         ]
 
 
-showPlayers : Team -> Html Msg
-showPlayers players =
+playersView : Team -> Html Msg
+playersView players =
     div []
         --render each player with most active in top
         ((List.sortBy .totalPlayTimeInMinutes players
             |> List.reverse
-            |> List.map playerToHtml
+            |> List.map playerView
          )
             ++ [ input [ placeholder "Player name", onInput PlayerNamed ] []
                , button [ onClick PlayerAdded ] [ text "Add" ]
@@ -200,19 +200,19 @@ showPlayers players =
         )
 
 
-showPlayersPresent : List Player -> Html Msg
-showPlayersPresent players =
+playersPresentView : List Player -> Html Msg
+playersPresentView players =
     div []
         [ text "Present today:"
         , br [] []
-        , presentToday players
+        , presentTodayView players
         , cancel
         , button [ onClick Play ] [ text "Play!" ]
         ]
 
 
-showGameUnderway : List Player -> Html Msg
-showGameUnderway present =
+gameUnderwayView : List Player -> Html Msg
+gameUnderwayView present =
     let
         journal =
             computePlayJournal
@@ -223,14 +223,14 @@ showGameUnderway present =
         div []
             [ text ("Game is underway " ++ toString (List.length present))
             , br [] []
-            , showPlaySchema journal
+            , playSchemaView journal
             , br [] []
             , button [ onClick GameEnded ] [ text "End Game" ]
             ]
 
 
-showPlaySchema : List PlayJournal -> Html Msg
-showPlaySchema journal =
+playSchemaView : List PlayJournal -> Html Msg
+playSchemaView journal =
     let
         sorted =
             List.sortBy .atMinute journal
@@ -239,8 +239,8 @@ showPlaySchema journal =
             []
 
 
-playerToHtml : Player -> Html Msg
-playerToHtml player =
+playerView : Player -> Html Msg
+playerView player =
     div []
         [ text
             (String.join ", "
@@ -543,8 +543,8 @@ playerKeeperOrBoth tuples =
             Just { atMinute = head.atMinute, substituteWhom = Both }
 
 
-presentToday : List Player -> Html Msg
-presentToday players =
+presentTodayView : List Player -> Html Msg
+presentTodayView players =
     div []
         (List.map
             (\p -> checkbox (PlayerPresenseChanged p.name) p.name)
