@@ -232,11 +232,38 @@ gameUnderwayView present =
 playSchemaView : List PlayJournal -> Html Msg
 playSchemaView journal =
     let
-        sorted =
+        pairs =
             List.sortBy .atMinute journal
+                --group in pairs and overlap, for easier mapping of substitutions
+                |> List.Extra.groupsOfWithStep 2 1
+
+        toTuple =
+            \pair ->
+                case pair of
+                    one :: two :: [] ->
+                        substitutionView two one
+
+                    _ ->
+                        []
     in
         div []
-            []
+            (List.map toTuple pairs
+                --put each substitution on a separe row
+                |> List.Extra.intercalate [ br [] [] ]
+            )
+
+
+substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
+substitutionView playersIn playersOut =
+    List.Extra.zip playersIn.substitutes playersOut.substitutes
+        |> List.map
+            (\( inn, out ) ->
+                if inn.name /= out.name then
+                    [ text (toString playersIn.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                else
+                    []
+            )
+        |> List.concat
 
 
 playerView : Player -> Html Msg
