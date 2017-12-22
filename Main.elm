@@ -146,7 +146,7 @@ update msg model =
             { model | state = Players }
 
         PlaySchema ->
-            { model | state = Schema }
+            { model | state = Schema, present = model.team }
 
         PlayerAdded ->
             { model
@@ -582,7 +582,7 @@ presentTodayView players =
 checkbox : Msg -> String -> Html Msg
 checkbox msg name =
     label []
-        [ input [ type_ "checkbox", onClick msg ] []
+        [ input [ type_ "checkbox", checked True, onClick msg ] []
         , text name
         ]
 
