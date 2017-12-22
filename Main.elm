@@ -83,8 +83,8 @@ type alias Settings =
     }
 
 
-myTeam : Team
-myTeam =
+someTeam : Team
+someTeam =
     [ { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 }
     , { name = "Elias", totalPlayTimeInMinutes = 89, timesKept = 3 }
     , { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }
@@ -96,8 +96,8 @@ myTeam =
     ]
 
 
-newTeam : Team
-newTeam =
+myTeam : Team
+myTeam =
     [ { name = "Kaya", totalPlayTimeInMinutes = 0, timesKept = 0 }
     , { name = "Elias", totalPlayTimeInMinutes = 0, timesKept = 0 }
     , { name = "Rein", totalPlayTimeInMinutes = 0, timesKept = 0 }
@@ -221,7 +221,7 @@ gameUnderwayView present =
                 present
     in
         div []
-            [ text ("Game is underway " ++ toString (List.length present))
+            [ text "Game is underway"
             , br [] []
             , playSchemaView journal
             , br [] []
@@ -232,8 +232,11 @@ gameUnderwayView present =
 playSchemaView : List PlayJournal -> Html Msg
 playSchemaView journal =
     let
-        pairs =
+        journalSorted =
             List.sortBy .atMinute journal
+
+        pairs =
+            journalSorted
                 --group in pairs and overlap, for easier mapping of substitutions
                 |> List.Extra.groupsOfWithStep 2 1
 
@@ -241,16 +244,129 @@ playSchemaView journal =
             \pair ->
                 case pair of
                     one :: two :: [] ->
-                        substitutionView two one
+                        substitutionView one two
 
                     _ ->
                         []
     in
         div []
-            (List.map toTuple pairs
-                --put each substitution on a separe row
-                |> List.Extra.intercalate [ br [] [] ]
+            ((List.head journalSorted
+                |> Maybe.withDefault defaultJournal
+                |> beginPlayView
+             )
+                :: br [] []
+                :: (List.map toTuple pairs
+                        |> List.concat
+                   )
             )
+
+
+beginPlayView : PlayJournal -> Html msg
+beginPlayView journalAtTheBeginning =
+    text
+        ("Keeper: "
+            ++ journalAtTheBeginning.keeper.name
+            ++ if List.length journalAtTheBeginning.substitutes > 0 then
+                ", substitutes: "
+                    ++ (List.map .name journalAtTheBeginning.substitutes
+                            |> String.join ", "
+                       )
+               else
+                ""
+        )
+
+
+j : List PlayJournal
+j =
+    [ { atMinute = 35
+      , keeper = { name = "Kaan", totalPlayTimeInMinutes = 25, timesKept = 1 }
+      , playing =
+            [ { name = "Elias", totalPlayTimeInMinutes = 25, timesKept = 0 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 25, timesKept = 0 }
+            , { name = "Rafael", totalPlayTimeInMinutes = 25, timesKept = 1 }
+            , { name = "Kaya", totalPlayTimeInMinutes = 25, timesKept = 1 }
+            , { name = "Jeroen", totalPlayTimeInMinutes = 25, timesKept = 1 }
+            ]
+      , substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 30, timesKept = 0 }, { name = "Mats", totalPlayTimeInMinutes = 30, timesKept = 0 } ]
+      }
+    , { atMinute = 30
+      , keeper = { name = "Kaan", totalPlayTimeInMinutes = 20, timesKept = 1 }
+      , playing =
+            [ { name = "Elias", totalPlayTimeInMinutes = 20, timesKept = 0 }
+            , { name = "Kaya", totalPlayTimeInMinutes = 20, timesKept = 1 }
+            , { name = "Rafael", totalPlayTimeInMinutes = 20, timesKept = 1 }
+            , { name = "Rein", totalPlayTimeInMinutes = 25, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 25, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Jeroen", totalPlayTimeInMinutes = 25, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 25, timesKept = 0 } ]
+      }
+    , { atMinute = 25
+      , keeper = { name = "Jeroen", totalPlayTimeInMinutes = 20, timesKept = 1 }
+      , playing =
+            [ { name = "Rafael", totalPlayTimeInMinutes = 15, timesKept = 1 }
+            , { name = "Kaya", totalPlayTimeInMinutes = 15, timesKept = 1 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 20, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 20, timesKept = 0 }
+            , { name = "Rein", totalPlayTimeInMinutes = 20, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Kaan", totalPlayTimeInMinutes = 20, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 20, timesKept = 0 } ]
+      }
+    , { atMinute = 20
+      , keeper = { name = "Jeroen", totalPlayTimeInMinutes = 15, timesKept = 1 }
+      , playing =
+            [ { name = "Kaan", totalPlayTimeInMinutes = 15, timesKept = 0 }
+            , { name = "Elias", totalPlayTimeInMinutes = 15, timesKept = 0 }
+            , { name = "Rein", totalPlayTimeInMinutes = 15, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 15, timesKept = 0 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 15, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Rafael", totalPlayTimeInMinutes = 15, timesKept = 1 }, { name = "Kaya", totalPlayTimeInMinutes = 15, timesKept = 1 } ]
+      }
+    , { atMinute = 15
+      , keeper = { name = "Rafael", totalPlayTimeInMinutes = 10, timesKept = 1 }
+      , playing =
+            [ { name = "Rein", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            , { name = "Elias", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            , { name = "Kaan", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            , { name = "Jeroen", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            , { name = "Kaya", totalPlayTimeInMinutes = 10, timesKept = 1 }
+            ]
+      , substitutes = [ { name = "Mats", totalPlayTimeInMinutes = 15, timesKept = 0 }, { name = "Kjeld", totalPlayTimeInMinutes = 15, timesKept = 0 } ]
+      }
+    , { atMinute = 10
+      , keeper = { name = "Rafael", totalPlayTimeInMinutes = 5, timesKept = 1 }
+      , playing =
+            [ { name = "Kaan", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            , { name = "Elias", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            , { name = "Rein", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 10, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Kaya", totalPlayTimeInMinutes = 10, timesKept = 1 }, { name = "Jeroen", totalPlayTimeInMinutes = 10, timesKept = 0 } ]
+      }
+    , { atMinute = 5
+      , keeper = { name = "Kaya", totalPlayTimeInMinutes = 5, timesKept = 1 }
+      , playing =
+            [ { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Jeroen", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 5, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Elias", totalPlayTimeInMinutes = 5, timesKept = 0 }, { name = "Rein", totalPlayTimeInMinutes = 5, timesKept = 0 } ]
+      }
+    , { atMinute = 0
+      , keeper = { name = "Kaya", totalPlayTimeInMinutes = 0, timesKept = 1 }
+      , playing =
+            [ { name = "Elias", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Rein", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Mats", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Kjeld", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            , { name = "Jeroen", totalPlayTimeInMinutes = 0, timesKept = 0 }
+            ]
+      , substitutes = [ { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }, { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 } ]
+      }
+    ]
 
 
 substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
@@ -259,7 +375,7 @@ substitutionView playersIn playersOut =
         |> List.map
             (\( inn, out ) ->
                 if inn.name /= out.name then
-                    [ text (toString playersIn.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                    [ text (toString playersOut.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
                 else
                     []
             )
