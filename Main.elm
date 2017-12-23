@@ -243,8 +243,8 @@ playSchemaView journal =
         toTuple =
             \pair ->
                 case pair of
-                    one :: two :: [] ->
-                        substitutionView one two
+                    comesOut :: comesIn :: [] ->
+                        substitutionView comesIn comesOut
 
                     _ ->
                         []
@@ -373,9 +373,9 @@ substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
 substitutionView playersIn playersOut =
     List.Extra.zip playersIn.substitutes playersOut.substitutes
         |> List.map
-            (\( inn, out ) ->
+            (\( out, inn ) ->
                 if inn.name /= out.name then
-                    [ text (toString playersOut.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                    [ text (toString playersIn.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
                 else
                     []
             )
