@@ -371,15 +371,27 @@ j =
 
 substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
 substitutionView playersIn playersOut =
-    List.Extra.zip playersIn.substitutes playersOut.substitutes
+    (List.Extra.zip playersIn.substitutes playersOut.substitutes
         |> List.map
             (\( out, inn ) ->
+                --same player remains as a substitution in two consecutive moments to substitute
                 if inn.name /= out.name then
-                    [ text (toString playersIn.atMinute ++ ": " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                    [ text (toString playersIn.atMinute ++ " min.: " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
                 else
                     []
             )
         |> List.concat
+    )
+        ++ --show if there was a change of keepers as well
+           if playersIn.keeper.name /= playersOut.keeper.name then
+            [ text (toString playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
+           else
+            []
+
+
+playerPresent : Player -> List Player -> Bool
+playerPresent player listOfPlayers =
+    List.any (\p -> p.name == player.name) listOfPlayers
 
 
 playerView : Player -> Html Msg
