@@ -60,7 +60,7 @@ type SubstituteType
 
 
 type alias Model =
-    { team : Team, present : List Player, playerToAdd : String, state : State, settings : Settings }
+    { team : Team, present : List Player, journal : List PlayJournal, playerToAdd : String, state : State, settings : Settings }
 
 
 type State
@@ -118,7 +118,7 @@ main : Program Never Model Msg
 main =
     Html.beginnerProgram
         { view = view
-        , model = { team = myTeam, present = [], playerToAdd = "", state = Menu, settings = mySettings }
+        , model = { team = myTeam, present = [], journal = [], playerToAdd = "", state = Menu, settings = mySettings }
         , update = update
         }
 
@@ -136,7 +136,7 @@ view model =
             playersPresentView model.team
 
         GameUnderway ->
-            gameUnderwayView model.present
+            gameUnderwayView model.journal
 
 
 update : Msg -> Model -> Model
@@ -160,7 +160,17 @@ update msg model =
             { model | team = List.filter (\p -> p.name /= name) model.team }
 
         Play ->
-            { model | state = GameUnderway }
+            let
+                settings =
+                    model.settings
+
+                j =
+                    computePlayJournal
+                        settings.numberOfPlayers
+                        (substituteAtMinute settings)
+                        model.present
+            in
+                { model | state = GameUnderway, journal = j }
 
         GameEnded ->
             { model | state = Players, present = [] }
@@ -211,22 +221,15 @@ playersPresentView players =
         ]
 
 
-gameUnderwayView : List Player -> Html Msg
-gameUnderwayView present =
-    let
-        journal =
-            computePlayJournal
-                mySettings.numberOfPlayers
-                (substituteAtMinute mySettings)
-                present
-    in
-        div []
-            [ text "Game is underway"
-            , br [] []
-            , playSchemaView journal
-            , br [] []
-            , button [ onClick GameEnded ] [ text "End Game" ]
-            ]
+gameUnderwayView : List PlayJournal -> Html Msg
+gameUnderwayView journal =
+    div []
+        [ text "Game is underway"
+        , br [] []
+        , playSchemaView journal
+        , br [] []
+        , button [ onClick GameEnded ] [ text "End Game" ]
+        ]
 
 
 playSchemaView : List PlayJournal -> Html Msg
@@ -387,11 +390,6 @@ substitutionView playersIn playersOut =
             [ text (toString playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
            else
             []
-
-
-playerPresent : Player -> List Player -> Bool
-playerPresent player listOfPlayers =
-    List.any (\p -> p.name == player.name) listOfPlayers
 
 
 playerView : Player -> Html Msg
@@ -596,6 +594,11 @@ computePlayJournal numberOfPlayers times present =
                                             choose n tail p head.atMinute (journalEntry :: acc)
     in
         choose numberOfPlayers times present 0 []
+
+
+updateTeamPlayTime : Team -> List Player -> List PlayJournal -> Team
+updateTeamPlayTime team present journal =
+    team
 
 
 choosePlayersAndSubstitutes : List Player -> Int -> ( List Player, List Player )
