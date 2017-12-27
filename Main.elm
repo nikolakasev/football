@@ -173,7 +173,11 @@ update msg model =
                 { model | state = GameUnderway, journal = j }
 
         GameEnded ->
-            { model | state = Players, present = [] }
+            { model
+                | state = Players
+                , team = updateTeamPlayTime model.team model.journal model.settings.gameDuration
+                , present = []
+            }
 
         GoToMain ->
             { model | state = Menu }
@@ -218,6 +222,23 @@ playersPresentView players =
         , presentTodayView players
         , cancel
         , button [ onClick Play ] [ text "Play!" ]
+        ]
+
+
+presentTodayView : List Player -> Html Msg
+presentTodayView players =
+    div []
+        (List.map
+            (\p -> checkbox (PlayerPresenseChanged p.name) p.name)
+            players
+        )
+
+
+checkbox : Msg -> String -> Html Msg
+checkbox msg name =
+    label []
+        [ input [ type_ "checkbox", checked True, onClick msg ] []
+        , text name
         ]
 
 
@@ -277,99 +298,6 @@ beginPlayView journalAtTheBeginning =
                else
                 ""
         )
-
-
-j : List PlayJournal
-j =
-    [ { atMinute = 35
-      , keeper = { name = "Kaan", totalPlayTimeInMinutes = 25, timesKept = 1 }
-      , playing =
-            [ { name = "Elias", totalPlayTimeInMinutes = 25, timesKept = 0 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 25, timesKept = 0 }
-            , { name = "Rafael", totalPlayTimeInMinutes = 25, timesKept = 1 }
-            , { name = "Kaya", totalPlayTimeInMinutes = 25, timesKept = 1 }
-            , { name = "Jeroen", totalPlayTimeInMinutes = 25, timesKept = 1 }
-            ]
-      , substitutes = [ { name = "Rein", totalPlayTimeInMinutes = 30, timesKept = 0 }, { name = "Mats", totalPlayTimeInMinutes = 30, timesKept = 0 } ]
-      }
-    , { atMinute = 30
-      , keeper = { name = "Kaan", totalPlayTimeInMinutes = 20, timesKept = 1 }
-      , playing =
-            [ { name = "Elias", totalPlayTimeInMinutes = 20, timesKept = 0 }
-            , { name = "Kaya", totalPlayTimeInMinutes = 20, timesKept = 1 }
-            , { name = "Rafael", totalPlayTimeInMinutes = 20, timesKept = 1 }
-            , { name = "Rein", totalPlayTimeInMinutes = 25, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 25, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Jeroen", totalPlayTimeInMinutes = 25, timesKept = 1 }, { name = "Kjeld", totalPlayTimeInMinutes = 25, timesKept = 0 } ]
-      }
-    , { atMinute = 25
-      , keeper = { name = "Jeroen", totalPlayTimeInMinutes = 20, timesKept = 1 }
-      , playing =
-            [ { name = "Rafael", totalPlayTimeInMinutes = 15, timesKept = 1 }
-            , { name = "Kaya", totalPlayTimeInMinutes = 15, timesKept = 1 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 20, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 20, timesKept = 0 }
-            , { name = "Rein", totalPlayTimeInMinutes = 20, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Kaan", totalPlayTimeInMinutes = 20, timesKept = 0 }, { name = "Elias", totalPlayTimeInMinutes = 20, timesKept = 0 } ]
-      }
-    , { atMinute = 20
-      , keeper = { name = "Jeroen", totalPlayTimeInMinutes = 15, timesKept = 1 }
-      , playing =
-            [ { name = "Kaan", totalPlayTimeInMinutes = 15, timesKept = 0 }
-            , { name = "Elias", totalPlayTimeInMinutes = 15, timesKept = 0 }
-            , { name = "Rein", totalPlayTimeInMinutes = 15, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 15, timesKept = 0 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 15, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Rafael", totalPlayTimeInMinutes = 15, timesKept = 1 }, { name = "Kaya", totalPlayTimeInMinutes = 15, timesKept = 1 } ]
-      }
-    , { atMinute = 15
-      , keeper = { name = "Rafael", totalPlayTimeInMinutes = 10, timesKept = 1 }
-      , playing =
-            [ { name = "Rein", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            , { name = "Elias", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            , { name = "Kaan", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            , { name = "Jeroen", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            , { name = "Kaya", totalPlayTimeInMinutes = 10, timesKept = 1 }
-            ]
-      , substitutes = [ { name = "Mats", totalPlayTimeInMinutes = 15, timesKept = 0 }, { name = "Kjeld", totalPlayTimeInMinutes = 15, timesKept = 0 } ]
-      }
-    , { atMinute = 10
-      , keeper = { name = "Rafael", totalPlayTimeInMinutes = 5, timesKept = 1 }
-      , playing =
-            [ { name = "Kaan", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            , { name = "Elias", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            , { name = "Rein", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 10, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Kaya", totalPlayTimeInMinutes = 10, timesKept = 1 }, { name = "Jeroen", totalPlayTimeInMinutes = 10, timesKept = 0 } ]
-      }
-    , { atMinute = 5
-      , keeper = { name = "Kaya", totalPlayTimeInMinutes = 5, timesKept = 1 }
-      , playing =
-            [ { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Jeroen", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 5, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Elias", totalPlayTimeInMinutes = 5, timesKept = 0 }, { name = "Rein", totalPlayTimeInMinutes = 5, timesKept = 0 } ]
-      }
-    , { atMinute = 0
-      , keeper = { name = "Kaya", totalPlayTimeInMinutes = 0, timesKept = 1 }
-      , playing =
-            [ { name = "Elias", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Rein", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Mats", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Kjeld", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            , { name = "Jeroen", totalPlayTimeInMinutes = 0, timesKept = 0 }
-            ]
-      , substitutes = [ { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }, { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 } ]
-      }
-    ]
 
 
 substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
@@ -460,25 +388,6 @@ updatePlayerPresense playerName team present =
         --add if not present
         False ->
             present ++ List.filter (\p -> p.name == playerName) team
-
-
-teamPlays : Settings -> List Player -> List Player
-teamPlays settings present =
-    let
-        substitutes =
-            computePlayJournal settings.numberOfPlayers (substituteAtMinute settings) present
-
-        lastJournal =
-            List.head substitutes |> Maybe.withDefault defaultJournal
-
-        minutesPlayedAfterLastSubstitution =
-            settings.gameDuration - lastJournal.atMinute
-
-        team =
-            updatePlayersTime (lastJournal.keeper :: lastJournal.playing) minutesPlayedAfterLastSubstitution
-                ++ lastJournal.substitutes
-    in
-        team
 
 
 computePlayJournal : Int -> List Substitute -> List Player -> List PlayJournal
@@ -596,9 +505,29 @@ computePlayJournal numberOfPlayers times present =
         choose numberOfPlayers times present 0 []
 
 
-updateTeamPlayTime : Team -> List Player -> List PlayJournal -> Team
-updateTeamPlayTime team present journal =
-    team
+updateTeamPlayTime : Team -> List PlayJournal -> Int -> Team
+updateTeamPlayTime team journal gameDuration =
+    let
+        lastJournal =
+            List.Extra.maximumBy .atMinute journal
+                |> Maybe.withDefault defaultJournal
+
+        minutesPlayedAfterLastSubstitution =
+            gameDuration - lastJournal.atMinute
+
+        present =
+            updatePlayersTime (lastJournal.keeper :: lastJournal.playing) minutesPlayedAfterLastSubstitution
+                ++ lastJournal.substitutes
+
+        notPresent =
+            List.Extra.filterNot (playerPresent present) team
+    in
+        present ++ notPresent
+
+
+playerPresent : List Player -> Player -> Bool
+playerPresent present player =
+    List.any (\p -> p.name == player.name) present
 
 
 choosePlayersAndSubstitutes : List Player -> Int -> ( List Player, List Player )
@@ -699,23 +628,6 @@ playerKeeperOrBoth tuples =
 
         head :: tail ->
             Just { atMinute = head.atMinute, substituteWhom = Both }
-
-
-presentTodayView : List Player -> Html Msg
-presentTodayView players =
-    div []
-        (List.map
-            (\p -> checkbox (PlayerPresenseChanged p.name) p.name)
-            players
-        )
-
-
-checkbox : Msg -> String -> Html Msg
-checkbox msg name =
-    label []
-        [ input [ type_ "checkbox", checked True, onClick msg ] []
-        , text name
-        ]
 
 
 cancel : Html Msg
