@@ -9,7 +9,6 @@ import List.Extra exposing (groupWhile)
 type Msg
     = SetupTeam
     | PlaySchema
-    | TeamConfirmedmyste
     | PlayerNamed String
     | PlayerAdded
     | PlayerRemoved String
@@ -171,9 +170,6 @@ update msg model =
 
         PlayerPresenseChanged name ->
             { model | present = updatePlayerPresense name model.team model.present }
-
-        _ ->
-            model
 
 
 mainMenuView : Html Msg
