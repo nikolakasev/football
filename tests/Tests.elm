@@ -1,8 +1,10 @@
-module Tests exposing (..)
+module Tests exposing (suite)
 
 import Main exposing (Player, Settings, teamPlays)
 import Test exposing (..)
 import Expect exposing (equal)
+import Fuzzers exposing (position)
+import Fuzz exposing (list)
 
 
 --import Fuzz exposing (string)
@@ -48,5 +50,13 @@ suite =
                             (testSettings.gameDuration * testSettings.numberOfPlayers)
                             --when the team has played, they've increased their total play time
                             (totalPlayTime teamHasPlayed - totalPlayTime testTeam)
+            , todo "play time for players not present remains the same"
+            , fuzz (list Fuzzers.position) "List.length should always be positive" <|
+                -- This anonymous function will be run 100 times, each time with a
+                -- randomly-generated fuzzList value.
+                \fuzzList ->
+                    fuzzList
+                        |> List.length
+                        |> Expect.atLeast 0
             ]
         ]
