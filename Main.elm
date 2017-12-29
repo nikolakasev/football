@@ -133,7 +133,7 @@ view model =
             playersView model.team
 
         Schema ->
-            playersPresentView model.team
+            playersPresentView model.team model.present model.settings.numberOfPlayers
 
         GameUnderway ->
             gameUnderwayView model.journal
@@ -214,14 +214,16 @@ playersView players =
         )
 
 
-playersPresentView : List Player -> Html Msg
-playersPresentView players =
+playersPresentView : Team -> List Player -> Int -> Html Msg
+playersPresentView team present numberOfPlayersNeeded =
     div []
         [ text "Present today:"
         , br [] []
-        , presentTodayView players
+
+        --start from the complete team, but allow to select who is present
+        , presentTodayView team
         , cancel
-        , button [ onClick Play ] [ text "Play!" ]
+        , button [ onClick Play, disabled (List.length present < numberOfPlayersNeeded) ] [ text "Play!" ]
         ]
 
 
