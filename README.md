@@ -11,3 +11,5 @@ This is an Elm app to manage the playtime of a football team
 ### Make UI nicer with bulma css and/or style-elements
 ### Implement local storage to keep track of the team
 ### Implement the settings page
+### Use List.take 1 instead of default journal and player
+### Use elm-lang Navigation and refactor the model and remove state, add Page to keep track of location
