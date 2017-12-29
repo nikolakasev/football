@@ -1,18 +1,28 @@
-module Fuzzers exposing (position)
+module Fuzzers exposing (..)
 
 import Fuzz exposing (..)
 import Random.Pcg as Random
 import Shrink
+import Main exposing (Settings)
 
 
-type alias Position =
-    { x : Int, y : Int }
-
-
-position : Fuzzer Position
-position =
+settings : Fuzzer Settings
+settings =
     Fuzz.custom
         --Generator a
-        (Random.map2 Position (Random.int -100 100) (Random.int -100 100))
+        (Random.map4
+            Settings
+            --TODO randomize
+            (Random.constant 40)
+            (Random.int 2 8)
+            --TODO randomize the following two as well
+            (Random.int 1 40)
+            (Random.int 1 40)
+        )
         --Shrinker a
-        (\{ x, y } -> Shrink.map Position (Shrink.int x) |> Shrink.andMap (Shrink.int y))
+        (\{ gameDuration, numberOfPlayers, changeKeeper, changePlayer } ->
+            Shrink.map Settings (Shrink.int gameDuration)
+                |> Shrink.andMap (Shrink.int numberOfPlayers)
+                |> Shrink.andMap (Shrink.int changeKeeper)
+                |> Shrink.andMap (Shrink.int changePlayer)
+        )
