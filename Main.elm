@@ -1,4 +1,4 @@
-module Main exposing (main)
+module Main exposing (main, teamPlays, Player, Settings)
 
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
@@ -161,7 +161,7 @@ update msg model =
         GameEnded ->
             { model
                 | state = Players
-                , team = updateTeamPlayTime model.team model.journal model.settings.gameDuration
+                , team = teamPlays model.team model.present model.settings
                 , present = []
             }
 
@@ -508,6 +508,18 @@ updateTeamPlayTime team journal gameDuration =
             List.Extra.filterNot (playerPresent present) team
     in
         present ++ notPresent
+
+
+teamPlays : Team -> List Player -> Settings -> Team
+teamPlays team present settings =
+    let
+        substituteThen =
+            substituteAtMinute settings
+
+        journal =
+            computePlayJournal settings.numberOfPlayers substituteThen present
+    in
+        updateTeamPlayTime team journal settings.gameDuration
 
 
 playerPresent : List Player -> Player -> Bool

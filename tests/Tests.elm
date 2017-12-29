@@ -1,36 +1,52 @@
 module Tests exposing (..)
 
+import Main exposing (Player, Settings, teamPlays)
 import Test exposing (..)
 import Expect exposing (equal)
-import Fuzz exposing (string)
+
+
+--import Fuzz exposing (string)
+
+
+testTeam : List Player
+testTeam =
+    [ { name = "Kaya", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Elias", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Rein", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Mats", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Kjeld", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Jeroen", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    , { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }
+    ]
+
+
+testSettings : Settings
+testSettings =
+    { gameDuration = 40, numberOfPlayers = 6, changeKeeper = 10, changePlayer = 5 }
+
+
+totalPlayTime : List Player -> Int
+totalPlayTime players =
+    List.map .totalPlayTimeInMinutes players
+        |> List.foldl (+) 0
 
 
 suite : Test
 suite =
     describe "The substitutes algorithm"
-        [ describe "String.reverse"
+        [ describe "total play time"
             -- Nest as many descriptions as you like.
-            [ test "has no effect on a palindrome" <|
+            [ test "is the sum of time players played" <|
                 \_ ->
                     let
-                        palindrome =
-                            "hannah"
+                        teamHasPlayed =
+                            teamPlays testTeam testTeam testSettings
                     in
-                        Expect.equal palindrome (String.reverse palindrome)
-
-            -- Expect.equal is designed to be used in pipeline style, like this.
-            , test "reverses a known string" <|
-                \_ ->
-                    "ABCDEFG"
-                        |> String.reverse
-                        |> Expect.equal "GFEDCBA"
-
-            -- fuzz runs the test 100 times with randomly-generated inputs!
-            , fuzz string "restores the original string if you run it again" <|
-                \randomlyGeneratedString ->
-                    randomlyGeneratedString
-                        |> String.reverse
-                        |> String.reverse
-                        |> Expect.equal randomlyGeneratedString
+                        Expect.equal
+                            --total time is always the same: duration * number of players
+                            (testSettings.gameDuration * testSettings.numberOfPlayers)
+                            --when the team has played, they've increased their total play time
+                            (totalPlayTime teamHasPlayed - totalPlayTime testTeam)
             ]
         ]
