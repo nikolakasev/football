@@ -1,4 +1,4 @@
-module Main exposing (..)
+module Main exposing (main)
 
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
@@ -81,19 +81,6 @@ type alias Settings =
     --how ofter to change a player
     , changePlayer : Int
     }
-
-
-someTeam : Team
-someTeam =
-    [ { name = "Kaya", totalPlayTimeInMinutes = 100, timesKept = 0 }
-    , { name = "Elias", totalPlayTimeInMinutes = 89, timesKept = 3 }
-    , { name = "Rein", totalPlayTimeInMinutes = 100, timesKept = 4 }
-    , { name = "Mats", totalPlayTimeInMinutes = 12, timesKept = 2 }
-    , { name = "Kjeld", totalPlayTimeInMinutes = 43, timesKept = 1 }
-    , { name = "Jeroen", totalPlayTimeInMinutes = 54, timesKept = 0 }
-    , { name = "Rafael", totalPlayTimeInMinutes = 23, timesKept = 0 }
-    , { name = "Kaan", totalPlayTimeInMinutes = 23, timesKept = 1 }
-    ]
 
 
 myTeam : Team
