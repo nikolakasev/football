@@ -1,28 +1,54 @@
 module Fuzzers exposing (..)
 
 import Fuzz exposing (..)
-import Random.Pcg as Random
+import Random.Pcg
+import Random.Pcg.String
+import Random.Pcg.Char
 import Shrink
-import Main exposing (Settings)
+import Main exposing (Settings, Player)
 
 
 settings : Fuzzer Settings
 settings =
-    Fuzz.custom
-        --Generator a
-        (Random.map4
-            Settings
-            --TODO randomize
-            (Random.constant 40)
-            (Random.int 2 8)
-            --TODO randomize the following two as well
-            (Random.int 1 40)
-            (Random.int 1 40)
-        )
-        --Shrinker a
-        (\{ gameDuration, numberOfPlayers, changeKeeper, changePlayer } ->
-            Shrink.map Settings (Shrink.int gameDuration)
-                |> Shrink.andMap (Shrink.int numberOfPlayers)
-                |> Shrink.andMap (Shrink.int changeKeeper)
-                |> Shrink.andMap (Shrink.int changePlayer)
-        )
+    let
+        --TODO randomize this as well
+        gameDuration =
+            40
+    in
+        Fuzz.custom
+            --Generator a
+            (Random.Pcg.map4
+                Settings
+                (Random.Pcg.int 1 gameDuration)
+                (Random.Pcg.int 2 8)
+                (Random.Pcg.int 1 gameDuration)
+                (Random.Pcg.int 1 gameDuration)
+            )
+            --Shrinker a
+            (\{ gameDuration, numberOfPlayers, changeKeeper, changePlayer } ->
+                Shrink.map Settings (Shrink.int gameDuration)
+                    |> Shrink.andMap (Shrink.int numberOfPlayers)
+                    |> Shrink.andMap (Shrink.int changeKeeper)
+                    |> Shrink.andMap (Shrink.int changePlayer)
+            )
+
+
+player : Fuzzer Player
+player =
+    let
+        sevenLetterEnglishWord =
+            Random.Pcg.String.string 7 Random.Pcg.Char.english
+    in
+        Fuzz.custom
+            (Random.Pcg.map3
+                Player
+                sevenLetterEnglishWord
+                (Random.Pcg.int 1 Random.Pcg.maxInt)
+                (Random.Pcg.int 1 Random.Pcg.maxInt)
+            )
+            --Shrinker a
+            (\{ name, totalPlayTimeInMinutes, timesKept } ->
+                Shrink.map Player (Shrink.string name)
+                    |> Shrink.andMap (Shrink.int totalPlayTimeInMinutes)
+                    |> Shrink.andMap (Shrink.int timesKept)
+            )
