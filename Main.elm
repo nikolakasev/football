@@ -30,16 +30,6 @@ type alias Player =
     }
 
 
-defaultPlayer : Player
-defaultPlayer =
-    { name = "John Doe", totalPlayTimeInMinutes = 707, timesKept = 707 }
-
-
-defaultJournal : PlayJournal
-defaultJournal =
-    { atMinute = 707, keeper = defaultPlayer, playing = [ defaultPlayer ], substitutes = [ defaultPlayer ] }
-
-
 type alias PlayJournal =
     { atMinute : Int
     , keeper : Player
@@ -151,9 +141,9 @@ update msg model =
                     model.settings
 
                 j =
-                    computePlayJournal
-                        settings.numberOfPlayers
+                    computePlaySchema
                         (substituteAtMinute settings)
+                        settings.numberOfPlayers
                         model.present
             in
                 { model | state = GameUnderway, journal = j }
@@ -260,7 +250,6 @@ playSchemaView journal =
     in
         div []
             ((List.head journalSorted
-                |> Maybe.withDefault defaultJournal
                 |> beginPlayView
              )
                 :: br [] []
@@ -270,19 +259,25 @@ playSchemaView journal =
             )
 
 
-beginPlayView : PlayJournal -> Html msg
+beginPlayView : Maybe PlayJournal -> Html msg
 beginPlayView journalAtTheBeginning =
-    text
-        ("Keeper: "
-            ++ journalAtTheBeginning.keeper.name
-            ++ if List.length journalAtTheBeginning.substitutes > 0 then
-                ", substitutes: "
-                    ++ (List.map .name journalAtTheBeginning.substitutes
-                            |> String.join ", "
-                       )
-               else
-                ""
-        )
+    case journalAtTheBeginning of
+        Just playJournal ->
+            text
+                ("Keeper: "
+                    ++ playJournal.keeper.name
+                    --show the substitutes if any
+                    ++ if List.length playJournal.substitutes > 0 then
+                        ", substitutes: "
+                            ++ (List.map .name playJournal.substitutes
+                                    |> String.join ", "
+                               )
+                       else
+                        ""
+                )
+
+        Nothing ->
+            text "beginPlayView: No journal entry provided."
 
 
 substitutionView : PlayJournal -> PlayJournal -> List (Html msg)
@@ -375,11 +370,11 @@ updatePlayerPresense playerName team present =
             present ++ List.filter (\p -> p.name == playerName) team
 
 
-computePlayJournal : Int -> List Substitute -> List Player -> List PlayJournal
-computePlayJournal numberOfPlayers times present =
+computePlaySchema : List Substitute -> Int -> List Player -> List PlayJournal
+computePlaySchema times numberOfPlayers present =
     let
-        choose =
-            \n t p m acc ->
+        compute =
+            \t n p acc ->
                 case t of
                     [] ->
                         acc
@@ -389,125 +384,66 @@ computePlayJournal numberOfPlayers times present =
                             --game begins, must give a role to all present players
                             0 ->
                                 let
-                                    ( players, substitutes ) =
-                                        choosePlayersAndSubstitutes p n
-
-                                    keeper =
-                                        chooseKeeper players
-
-                                    playersWithoutKeeper =
-                                        List.drop 1 players
-
-                                    journalEntry =
-                                        { atMinute = 0, keeper = keeper, playing = playersWithoutKeeper, substitutes = substitutes }
+                                    ( keeper, players, substitutes ) =
+                                        chooseKeeperPlayersAndSubstitutes p n
                                 in
-                                    choose n tail p 0 (journalEntry :: acc)
+                                    case keeper of
+                                        Nothing ->
+                                            compute tail n p []
+
+                                        Just player ->
+                                            compute tail n p ({ atMinute = 0, keeper = player, playing = players, substitutes = substitutes } :: [])
 
                             --game underway
                             _ ->
-                                case head.substituteWhom of
-                                    Playr ->
-                                        let
-                                            currentSituation =
-                                                List.head acc
-                                                    |> Maybe.withDefault defaultJournal
+                                let
+                                    next =
+                                        computeNextJournalEntry head acc n
+                                in
+                                    case next of
+                                        Nothing ->
+                                            compute tail n p acc
 
-                                            --update play time
-                                            timePlayedSoFar =
-                                                (head.atMinute - m)
-
-                                            keeper =
-                                                (updatePlayerTime currentSituation.keeper timePlayedSoFar)
-
-                                            playing =
-                                                updatePlayersTime currentSituation.playing timePlayedSoFar
-
-                                            ( players, substitutes ) =
-                                                choosePlayersAndSubstitutes (playing ++ currentSituation.substitutes) (n - 1)
-
-                                            journalEntry =
-                                                { atMinute = head.atMinute, keeper = keeper, playing = players, substitutes = substitutes }
-                                        in
-                                            choose n tail p head.atMinute (journalEntry :: acc)
-
-                                    Keeper ->
-                                        let
-                                            currentSituation =
-                                                List.head acc
-                                                    |> Maybe.withDefault defaultJournal
-
-                                            --update play time
-                                            timePlayedSoFar =
-                                                (head.atMinute - m)
-
-                                            currentKeeper =
-                                                (updatePlayerTime currentSituation.keeper timePlayedSoFar)
-
-                                            playing =
-                                                updatePlayersTime currentSituation.playing timePlayedSoFar
-
-                                            ( players, substitutes ) =
-                                                choosePlayersAndSubstitutes ([ currentKeeper ] ++ playing ++ currentSituation.substitutes) n
-
-                                            keeper =
-                                                chooseKeeper players
-
-                                            playersWithoutKeeper =
-                                                List.drop 1 players
-
-                                            journalEntry =
-                                                { atMinute = head.atMinute, keeper = keeper, playing = playersWithoutKeeper, substitutes = substitutes }
-                                        in
-                                            choose n tail p head.atMinute (journalEntry :: acc)
-
-                                    Both ->
-                                        let
-                                            currentSituation =
-                                                List.head acc
-                                                    |> Maybe.withDefault defaultJournal
-
-                                            --update play time
-                                            timePlayedSoFar =
-                                                (head.atMinute - m)
-
-                                            playing =
-                                                updatePlayersTime (currentSituation.keeper :: currentSituation.playing) timePlayedSoFar
-
-                                            ( players, substitutes ) =
-                                                choosePlayersAndSubstitutes (playing ++ currentSituation.substitutes) n
-
-                                            keeper =
-                                                chooseKeeper players
-
-                                            playersWithoutKeeper =
-                                                List.drop 1 players
-
-                                            journalEntry =
-                                                { atMinute = head.atMinute, keeper = keeper, playing = playersWithoutKeeper, substitutes = substitutes }
-                                        in
-                                            choose n tail p head.atMinute (journalEntry :: acc)
+                                        Just journal ->
+                                            compute tail n p (journal :: acc)
     in
-        choose numberOfPlayers times present 0 []
+        compute times numberOfPlayers present []
+
+
+computeNextJournalEntry : Substitute -> List PlayJournal -> Int -> Maybe PlayJournal
+computeNextJournalEntry substitute journalSoFar numberOfPlayers =
+    --given a list of journal entries, compute the next one
+    Nothing
 
 
 updateTeamPlayTime : Team -> List PlayJournal -> Int -> Team
 updateTeamPlayTime team journal gameDuration =
     let
-        lastJournal =
+        latestJournal =
             List.Extra.maximumBy .atMinute journal
-                |> Maybe.withDefault defaultJournal
 
-        minutesPlayedAfterLastSubstitution =
-            gameDuration - lastJournal.atMinute
+        calculate =
+            \journal team duration ->
+                let
+                    minutesPlayedAfterLastSubstitution =
+                        duration - journal.atMinute
 
-        present =
-            updatePlayersTime (lastJournal.keeper :: lastJournal.playing) minutesPlayedAfterLastSubstitution
-                ++ lastJournal.substitutes
+                    present =
+                        updatePlayersTime (journal.keeper :: journal.playing) minutesPlayedAfterLastSubstitution
+                            ++ journal.substitutes
 
-        notPresent =
-            List.Extra.filterNot (playerPresent present) team
+                    notPresent =
+                        List.Extra.filterNot (playerPresent present) team
+                in
+                    present ++ notPresent
     in
-        present ++ notPresent
+        case latestJournal of
+            --a journal is mandatory to calculate the new player play times
+            Nothing ->
+                team
+
+            Just journal ->
+                calculate journal team gameDuration
 
 
 teamPlays : Team -> List Player -> Settings -> Team
@@ -517,7 +453,7 @@ teamPlays team present settings =
             substituteAtMinute settings
 
         journal =
-            computePlayJournal settings.numberOfPlayers substituteThen present
+            computePlaySchema substituteThen settings.numberOfPlayers present
     in
         updateTeamPlayTime team journal settings.gameDuration
 
@@ -527,11 +463,11 @@ playerPresent present player =
     List.any (\p -> p.name == player.name) present
 
 
-choosePlayersAndSubstitutes : List Player -> Int -> ( List Player, List Player )
-choosePlayersAndSubstitutes present numberOfPlayers =
+chooseKeeperPlayersAndSubstitutes : List Player -> Int -> ( Maybe Player, List Player, List Player )
+chooseKeeperPlayersAndSubstitutes present numberOfPlayers =
     case present of
         [] ->
-            ( [], [] )
+            ( Nothing, [], [] )
 
         _ ->
             let
@@ -558,18 +494,21 @@ choosePlayersAndSubstitutes present numberOfPlayers =
                     rankedForPlayTimeDescending
                         |> List.drop playersExtra
                         |> List.reverse
+
+                keeper =
+                    chooseKeeper playing
             in
-                ( playing, substitutes )
+                ( keeper, List.drop 1 playing, substitutes )
 
 
-chooseKeeper : List Player -> Player
+chooseKeeper : List Player -> Maybe Player
 chooseKeeper players =
-    let
-        keeper =
-            List.head players
-                |> Maybe.withDefault defaultPlayer
-    in
-        { keeper | timesKept = keeper.timesKept + 1 }
+    case players of
+        [] ->
+            Nothing
+
+        player :: _ ->
+            Just { player | timesKept = player.timesKept + 1 }
 
 
 updatePlayersTime : List Player -> Int -> List Player
