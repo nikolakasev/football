@@ -43,7 +43,7 @@ type alias Substitute =
 
 
 type SubstituteType
-    = Playr
+    = Players
     | Keeper
     | Both
 
@@ -54,7 +54,7 @@ type alias Model =
 
 type State
     = Menu
-    | Players
+    | MyTeam
     | Schema
     | GameUnderway
 
@@ -105,7 +105,7 @@ view model =
         Menu ->
             mainMenuView
 
-        Players ->
+        MyTeam ->
             playersView model.team
 
         Schema ->
@@ -119,7 +119,7 @@ update : Msg -> Model -> Model
 update msg model =
     case msg of
         SetupTeam ->
-            { model | state = Players }
+            { model | state = MyTeam }
 
         PlaySchema ->
             { model | state = Schema, present = model.team }
@@ -150,7 +150,7 @@ update msg model =
 
         GameEnded ->
             { model
-                | state = Players
+                | state = MyTeam
                 , team = teamPlays model.team model.present model.settings
                 , present = []
             }
@@ -413,7 +413,45 @@ computePlaySchema times numberOfPlayers present =
 computeNextJournalEntry : Substitute -> List PlayJournal -> Int -> Maybe PlayJournal
 computeNextJournalEntry substitute journalSoFar numberOfPlayers =
     --given a list of journal entries, compute the next one
-    Nothing
+    case journalSoFar of
+        [] ->
+            Nothing
+
+        previousEntry :: _ ->
+            let
+                timePlayedSoFar =
+                    substitute.atMinute - previousEntry.atMinute
+
+                keeperSoFar =
+                    (updatePlayerTime previousEntry.keeper timePlayedSoFar)
+
+                playingSoFar =
+                    updatePlayersTime previousEntry.playing timePlayedSoFar
+
+                --used when substituting players only
+                ( keeper, players, substitutes ) =
+                    chooseKeeperPlayersAndSubstitutes (playingSoFar ++ previousEntry.substitutes) (numberOfPlayers - 1)
+
+                --used when substituting both players and keeper
+                ( k, p, s ) =
+                    chooseKeeperPlayersAndSubstitutes ([ keeperSoFar ] ++ playingSoFar ++ previousEntry.substitutes) numberOfPlayers
+            in
+                case substitute.substituteWhom of
+                    Players ->
+                        case keeper of
+                            Nothing ->
+                                Nothing
+
+                            Just player ->
+                                Just { atMinute = substitute.atMinute, keeper = keeperSoFar, playing = player :: players, substitutes = substitutes }
+
+                    _ ->
+                        case k of
+                            Nothing ->
+                                Nothing
+
+                            Just player ->
+                                Just { atMinute = substitute.atMinute, keeper = player, playing = p, substitutes = s }
 
 
 updateTeamPlayTime : Team -> List PlayJournal -> Int -> Team
@@ -536,7 +574,7 @@ substituteAtMinute settings =
     let
         playerChangeAtMinute =
             List.range 0 (settings.gameDuration // settings.changePlayer)
-                |> List.map (\t -> { atMinute = t * settings.changePlayer, substituteWhom = Playr })
+                |> List.map (\t -> { atMinute = t * settings.changePlayer, substituteWhom = Players })
 
         keeperChangeAtMinute =
             List.range 0 (settings.gameDuration // settings.changeKeeper)
