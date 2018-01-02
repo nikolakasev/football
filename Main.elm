@@ -1,9 +1,12 @@
-module Main exposing (main, teamPlays, Player, Settings)
+port module Main exposing (main, setStorage, teamPlays, Player, Settings)
 
 import Html exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (..)
 import List.Extra exposing (groupWhile)
+
+
+port setStorage : Team -> Cmd msg
 
 
 type Msg
@@ -72,17 +75,9 @@ type alias Settings =
     }
 
 
-myTeam : Team
-myTeam =
-    [ { name = "Kaya", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Elias", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Rein", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Mats", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Kjeld", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Jeroen", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Rafael", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    , { name = "Kaan", totalPlayTimeInMinutes = 0, timesKept = 0 }
-    ]
+emptyTeam : Team
+emptyTeam =
+    []
 
 
 mySettings : Settings
@@ -90,13 +85,33 @@ mySettings =
     { gameDuration = 40, numberOfPlayers = 6, changeKeeper = 10, changePlayer = 5 }
 
 
-main : Program Never Model Msg
+main : Program (Maybe Team) Model Msg
 main =
-    Html.beginnerProgram
-        { view = view
-        , model = { team = myTeam, present = [], journal = [], playerToAdd = "", state = Menu, settings = mySettings }
-        , update = update
+    Html.programWithFlags
+        { init = init
+        , view = view
+        , update = updateWithStorage
+        , subscriptions = \_ -> Sub.none
         }
+
+
+emptyModel : Model
+emptyModel =
+    { team = [], present = [], journal = [], playerToAdd = "", state = Menu, settings = mySettings }
+
+
+init : Maybe Team -> ( Model, Cmd Msg )
+init savedTeam =
+    let
+        model =
+            case savedTeam of
+                Just team ->
+                    { emptyModel | team = team }
+
+                Nothing ->
+                    { emptyModel | team = emptyTeam }
+    in
+        ( model, Cmd.none )
 
 
 view : Model -> Html Msg
@@ -115,25 +130,38 @@ view model =
             gameUnderwayView model.journal
 
 
-update : Msg -> Model -> Model
+updateWithStorage : Msg -> Model -> ( Model, Cmd Msg )
+updateWithStorage msg model =
+    let
+        ( newModel, cmds ) =
+            update msg model
+    in
+        --push the team data to JavaScript, so that it's stored in localStorage
+        ( newModel
+        , Cmd.batch [ setStorage newModel.team, cmds ]
+        )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetupTeam ->
-            { model | state = MyTeam }
+            { model | state = MyTeam } ! []
 
         PlaySchema ->
-            { model | state = Schema, present = model.team }
+            { model | state = Schema, present = model.team } ! []
 
         PlayerAdded ->
             { model
                 | team = addPlayerToTeam { name = model.playerToAdd, totalPlayTimeInMinutes = 0, timesKept = 0 } model.team
             }
+                ! []
 
         PlayerNamed name ->
-            { model | playerToAdd = name }
+            { model | playerToAdd = name } ! []
 
         PlayerRemoved name ->
-            { model | team = List.filter (\p -> p.name /= name) model.team }
+            { model | team = List.filter (\p -> p.name /= name) model.team } ! []
 
         Play ->
             let
@@ -146,7 +174,7 @@ update msg model =
                         settings.numberOfPlayers
                         model.present
             in
-                { model | state = GameUnderway, journal = j }
+                { model | state = GameUnderway, journal = j } ! []
 
         GameEnded ->
             { model
@@ -154,12 +182,13 @@ update msg model =
                 , team = teamPlays model.team model.present model.settings
                 , present = []
             }
+                ! []
 
         GoToMain ->
-            { model | state = Menu }
+            { model | state = Menu } ! []
 
         PlayerPresenseChanged name ->
-            { model | present = updatePlayerPresense name model.team model.present }
+            { model | present = updatePlayerPresense name model.team model.present } ! []
 
 
 mainMenuView : Html Msg

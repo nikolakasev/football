@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html>
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Football App</title>
+    <script type="text/javascript" src="main.js"></script>
+  </head>
+
+  <body></body>
+
+  <script type="text/javascript">
+    var storedState = localStorage.getItem('football-app');
+    var startingState = storedState ? JSON.parse(storedState) : null;
+    //provide the stored state (if any) to Elm
+    var app = Elm.Main.fullscreen(startingState);
+
+    //when Elm calls this port, the state gets stored in the browser's local storage
+    app.ports.setStorage.subscribe(function(state) {
+      localStorage.setItem('football-app', JSON.stringify(state));
+    });
+  </script>
+
+</html>
