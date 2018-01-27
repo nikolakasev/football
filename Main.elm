@@ -85,12 +85,23 @@ mySettings =
     { gameDuration = 40, numberOfPlayers = 6, changeKeeper = 10, changePlayer = 5 }
 
 
-main : Program (Maybe Team) Model Msg
+
+-- main : Program (Maybe Team) Model Msg
+-- main =
+--     Html.programWithFlags
+--         { init = init
+--         , view = view
+--         , update = updateWithStorage
+--         , subscriptions = \_ -> Sub.none
+--         }
+
+
+main : Program Never Model Msg
 main =
-    Html.programWithFlags
-        { init = init
+    Html.program
+        { init = (init Nothing)
         , view = view
-        , update = updateWithStorage
+        , update = update
         , subscriptions = \_ -> Sub.none
         }
 
