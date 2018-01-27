@@ -9,4 +9,4 @@ This is an Elm app to manage the playtime of a football team
 - [ ] Never select a keeper two times after each other
 - [ ] Make UI nicer with bulma css and/or style-elements
 - [ ] Implement the settings page
-- [ ] Use elm-lang Navigation and refactor the model and remove state, add Page to keep track of location
+- [ ] Use elm-lang Navigation and refactor the model and remove state

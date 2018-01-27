@@ -11,15 +11,22 @@ port setStorage : Team -> Cmd msg
 
 type Msg
     = SetupTeam
-    | PlaySchema
-    | PlayerNamed String
+    | SelectWhoIsPresent
+    | TypingPlayerName String
     | PlayerAdded
     | PlayerRemoved String
       -- this gets emitted from the checkbox
     | PlayerPresenseChanged String
     | Play
     | GameEnded
-    | GoToMain
+    | GoToHome
+
+
+type Page
+    = Home
+    | Team
+    | PresentPlayers
+    | GameUnderway
 
 
 type alias Team =
@@ -52,14 +59,7 @@ type SubstituteType
 
 
 type alias Model =
-    { team : Team, present : List Player, journal : List PlayJournal, playerToAdd : String, state : State, settings : Settings }
-
-
-type State
-    = Menu
-    | MyTeam
-    | Schema
-    | GameUnderway
+    { page : Page, team : Team, present : List Player, journal : List PlayJournal, playerToAdd : String, settings : Settings }
 
 
 type alias Settings =
@@ -108,7 +108,7 @@ main =
 
 emptyModel : Model
 emptyModel =
-    { team = [], present = [], journal = [], playerToAdd = "", state = Menu, settings = mySettings }
+    { page = Home, team = [], present = [], journal = [], playerToAdd = "", settings = mySettings }
 
 
 init : Maybe Team -> ( Model, Cmd Msg )
@@ -127,14 +127,14 @@ init savedTeam =
 
 view : Model -> Html Msg
 view model =
-    case model.state of
-        Menu ->
+    case model.page of
+        Home ->
             mainMenuView
 
-        MyTeam ->
+        Team ->
             playersView model.team
 
-        Schema ->
+        PresentPlayers ->
             playersPresentView model.team model.present model.settings.numberOfPlayers
 
         GameUnderway ->
@@ -157,10 +157,10 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         SetupTeam ->
-            { model | state = MyTeam } ! []
+            { model | page = Team } ! []
 
-        PlaySchema ->
-            { model | state = Schema, present = model.team } ! []
+        SelectWhoIsPresent ->
+            { model | page = PresentPlayers, present = model.team } ! []
 
         PlayerAdded ->
             { model
@@ -168,7 +168,7 @@ update msg model =
             }
                 ! []
 
-        PlayerNamed name ->
+        TypingPlayerName name ->
             { model | playerToAdd = name } ! []
 
         PlayerRemoved name ->
@@ -185,18 +185,18 @@ update msg model =
                         settings.numberOfPlayers
                         model.present
             in
-                { model | state = GameUnderway, journal = j } ! []
+                { model | page = GameUnderway, journal = j } ! []
 
         GameEnded ->
             { model
-                | state = MyTeam
+                | page = Home
                 , team = teamPlays model.team model.present model.settings
                 , present = []
             }
                 ! []
 
-        GoToMain ->
-            { model | state = Menu } ! []
+        GoToHome ->
+            { model | page = Home } ! []
 
         PlayerPresenseChanged name ->
             { model | present = updatePlayerPresense name model.team model.present } ! []
@@ -207,7 +207,7 @@ mainMenuView =
     div []
         [ Html.button [ onClick SetupTeam ] [ text "My Team" ]
         , Html.br [] []
-        , Html.button [ onClick PlaySchema ] [ text "Play Schema" ]
+        , Html.button [ onClick SelectWhoIsPresent ] [ text "Play Schema" ]
         ]
 
 
@@ -219,10 +219,10 @@ playersView players =
             |> List.reverse
             |> List.map playerView
          )
-            ++ [ input [ placeholder "Player name", onInput PlayerNamed ] []
+            ++ [ input [ placeholder "Player name", onInput TypingPlayerName ] []
                , button [ onClick PlayerAdded ] [ text "Add" ]
                , br [] []
-               , button [ onClick PlaySchema ] [ text "Play Schema" ]
+               , button [ onClick SelectWhoIsPresent ] [ text "Play Schema" ]
                ]
         )
 
@@ -647,4 +647,4 @@ playerKeeperOrBoth tuples =
 cancel : Html Msg
 cancel =
     -- TODO: is this the best way to navigate?
-    button [ onClick GoToMain ] [ text "Cancel" ]
+    button [ onClick GoToHome ] [ text "Cancel" ]
