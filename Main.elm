@@ -408,7 +408,42 @@ updatePlayerPresense playerName team present =
 
 computePlaySchema : List Substitute -> Int -> List Player -> List PlayJournal
 computePlaySchema times numberOfPlayers present =
-    []
+    compute times numberOfPlayers present []
+
+
+compute : List Substitute -> Int -> List Player -> List PlayJournal -> List PlayJournal
+compute times n p acc =
+    case times of
+        [] ->
+            acc
+
+        head :: tail ->
+            case head.atMinute of
+                --game begins, must give a role to all present players
+                0 ->
+                    let
+                        ( keeper, players, substitutes ) =
+                            rankKeeperPlayersAndSubstitutes p n
+                    in
+                    case keeper of
+                        Nothing ->
+                            compute tail n p []
+
+                        Just player ->
+                            compute tail n p ({ atMinute = 0, keeper = player, playing = players, substitutes = substitutes } :: [])
+
+                --game underway
+                _ ->
+                    let
+                        next =
+                            computeNextJournalEntry head acc n
+                    in
+                    case next of
+                        Nothing ->
+                            compute tail n p acc
+
+                        Just journal ->
+                            compute tail n p (journal :: acc)
 
 
 computeNextJournalEntry : Substitute -> List PlayJournal -> Int -> Maybe PlayJournal
