@@ -1,12 +1,10 @@
-port module Main exposing (Player, Settings, main, setStorage, teamPlays)
+module Main exposing (Model, Msg(..), Page(..), PlayJournal, Player, Settings, Substitute, SubstituteType(..), Team, addPlayerToTeam, beginPlayView, cancel, checkbox, chooseKeeper, computeNextJournalEntry, computePlaySchema, emptyModel, emptyTeam, exampleTeam, gameUnderwayView, init, keptToString, main, mainMenuView, minutesToString, mySettings, playSchemaView, playerKeeperOrBoth, playerPresent, playerView, playersPresentView, playersView, presentTodayView, rankKeeperPlayersAndSubstitutes, subscriptions, substituteAtMinute, substitutionView, teamPlays, update, updatePlayerPresense, updatePlayerTime, updatePlayersTime, updateTeamPlayTime, view)
 
+import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import List.Extra exposing (groupWhile)
-
-
-port setStorage : Team -> Cmd msg
 
 
 type Msg
@@ -80,29 +78,27 @@ emptyTeam =
     []
 
 
+exampleTeam : Team
+exampleTeam =
+    [ { name = "Peter", totalPlayTimeInMinutes = 10, timesKept = 1 }
+    , { name = "John", totalPlayTimeInMinutes = 6, timesKept = 2 }
+    , { name = "Marry", totalPlayTimeInMinutes = 20, timesKept = 2 }
+    , { name = "Carol", totalPlayTimeInMinutes = 20, timesKept = 1 }
+    , { name = "Michael", totalPlayTimeInMinutes = 12, timesKept = 0 }
+    , { name = "Cor", totalPlayTimeInMinutes = 34, timesKept = 3 }
+    ]
+
+
 mySettings : Settings
 mySettings =
     { gameDuration = 40, numberOfPlayers = 6, changeKeeper = 10, changePlayer = 5 }
 
 
-
--- main : Program (Maybe Team) Model Msg
--- main =
---     Html.programWithFlags
---         { init = init
---         , view = view
---         , update = updateWithStorage
---         , subscriptions = \_ -> Sub.none
---         }
-
-
-main : Program Never Model Msg
 main =
-    Html.program
+    Browser.sandbox
         { init = init Nothing
         , view = view
         , update = update
-        , subscriptions = \_ -> Sub.none
         }
 
 
@@ -111,7 +107,12 @@ emptyModel =
     { page = Home, team = [], present = [], journal = [], playerToAdd = "", settings = mySettings }
 
 
-init : Maybe Team -> ( Model, Cmd Msg )
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Sub.none
+
+
+init : Maybe Team -> Model
 init savedTeam =
     let
         model =
@@ -122,7 +123,7 @@ init savedTeam =
                 Nothing ->
                     { emptyModel | team = emptyTeam }
     in
-    ( model, Cmd.none )
+    model
 
 
 view : Model -> Html Msg
@@ -141,47 +142,25 @@ view model =
             gameUnderwayView model.journal
 
 
-updateWithStorage : Msg -> Model -> ( Model, Cmd Msg )
-updateWithStorage msg model =
-    let
-        ( newModel, cmds ) =
-            update msg model
-    in
-    --push the team data to JavaScript, so that it's stored in localStorage
-    ( newModel
-    , Cmd.batch [ setStorage newModel.team, cmds ]
-    )
-
-
-update : Msg -> Model -> ( Model, Cmd Msg )
+update : Msg -> Model -> Model
 update msg model =
     case msg of
         SetupTeam ->
-            ( { model | page = Team }
-            , Cmd.none
-            )
+            { model | page = Team }
 
         SelectWhoIsPresent ->
-            ( { model | page = PresentPlayers, present = model.team }
-            , Cmd.none
-            )
+            { model | page = PresentPlayers, present = model.team }
 
         PlayerAdded ->
-            ( { model
+            { model
                 | team = addPlayerToTeam { name = model.playerToAdd, totalPlayTimeInMinutes = 0, timesKept = 0 } model.team
-              }
-            , Cmd.none
-            )
+            }
 
         TypingPlayerName name ->
-            ( { model | playerToAdd = name }
-            , Cmd.none
-            )
+            { model | playerToAdd = name }
 
         PlayerRemoved name ->
-            ( { model | team = List.filter (\p -> p.name /= name) model.team }
-            , Cmd.none
-            )
+            { model | team = List.filter (\p -> p.name /= name) model.team }
 
         Play ->
             let
@@ -194,28 +173,20 @@ update msg model =
                         settings.numberOfPlayers
                         model.present
             in
-            ( { model | page = GameUnderway, journal = j }
-            , Cmd.none
-            )
+            { model | page = GameUnderway, journal = j }
 
         GameEnded ->
-            ( { model
+            { model
                 | page = Home
                 , team = teamPlays model.team model.present model.settings
                 , present = []
-              }
-            , Cmd.none
-            )
+            }
 
         GoToHome ->
-            ( { model | page = Home }
-            , Cmd.none
-            )
+            { model | page = Home }
 
         PlayerPresenseChanged name ->
-            ( { model | present = updatePlayerPresense name model.team model.present }
-            , Cmd.none
-            )
+            { model | present = updatePlayerPresense name model.team model.present }
 
 
 mainMenuView : Html Msg
@@ -345,7 +316,7 @@ substitutionView playersIn playersOut =
             (\( out, inn ) ->
                 --same player remains as a substitution in two consecutive moments to substitute
                 if inn.name /= out.name then
-                    [ text (String.toInt playersIn.atMinute ++ " min.: " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                    [ text (String.fromInt playersIn.atMinute ++ " min.: " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
 
                 else
                     []
@@ -354,7 +325,7 @@ substitutionView playersIn playersOut =
     )
         ++ --show if there was a change of keepers as well
            (if playersIn.keeper.name /= playersOut.keeper.name then
-                [ text (String.toInt playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
+                [ text (String.fromInt playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
 
             else
                 []
@@ -384,7 +355,7 @@ minutesToString minutes =
         "0 min."
 
     else if minutes < 60 then
-        String.toInt minutes ++ " min."
+        String.fromInt minutes ++ " min."
 
     else if minutes == 60 then
         "1 h."
@@ -394,7 +365,7 @@ minutesToString minutes =
             hours =
                 minutes // 60
         in
-        String.toInt hours ++ " h. " ++ String.toInt (minutes - hours * 60) ++ " min."
+        String.fromInt hours ++ " h. " ++ String.fromInt (minutes - hours * 60) ++ " min."
 
 
 keptToString : Int -> String
@@ -410,7 +381,7 @@ keptToString times =
             "kept twice"
 
         _ ->
-            "kept " ++ String.toInt times ++ " times"
+            "kept " ++ String.fromInt times ++ " times"
 
 
 addPlayerToTeam : Player -> Team -> Team
@@ -437,42 +408,7 @@ updatePlayerPresense playerName team present =
 
 computePlaySchema : List Substitute -> Int -> List Player -> List PlayJournal
 computePlaySchema times numberOfPlayers present =
-    let
-        compute =
-            \t n p acc ->
-                case t of
-                    [] ->
-                        acc
-
-                    head :: tail ->
-                        case head.atMinute of
-                            --game begins, must give a role to all present players
-                            0 ->
-                                let
-                                    ( keeper, players, substitutes ) =
-                                        chooseKeeperPlayersAndSubstitutes p n
-                                in
-                                case keeper of
-                                    Nothing ->
-                                        compute tail n p []
-
-                                    Just player ->
-                                        compute tail n p ({ atMinute = 0, keeper = player, playing = players, substitutes = substitutes } :: [])
-
-                            --game underway
-                            _ ->
-                                let
-                                    next =
-                                        computeNextJournalEntry head acc n
-                                in
-                                case next of
-                                    Nothing ->
-                                        compute tail n p acc
-
-                                    Just journal ->
-                                        compute tail n p (journal :: acc)
-    in
-    compute times numberOfPlayers present []
+    []
 
 
 computeNextJournalEntry : Substitute -> List PlayJournal -> Int -> Maybe PlayJournal
@@ -488,18 +424,18 @@ computeNextJournalEntry substitute journalSoFar numberOfPlayers =
                     substitute.atMinute - previousEntry.atMinute
 
                 keeperSoFar =
-                    updatePlayerTime previousEntry.keeper timePlayedSoFar
+                    updatePlayerTime timePlayedSoFar previousEntry.keeper
 
                 playingSoFar =
-                    updatePlayersTime previousEntry.playing timePlayedSoFar
+                    updatePlayersTime timePlayedSoFar previousEntry.playing
 
                 --used when substituting players only
                 ( keeper, players, substitutes ) =
-                    chooseKeeperPlayersAndSubstitutes (playingSoFar ++ previousEntry.substitutes) (numberOfPlayers - 1)
+                    rankKeeperPlayersAndSubstitutes (playingSoFar ++ previousEntry.substitutes) (numberOfPlayers - 1)
 
                 --used when substituting both players and keeper
                 ( k, p, s ) =
-                    chooseKeeperPlayersAndSubstitutes ([ keeperSoFar ] ++ playingSoFar ++ previousEntry.substitutes) numberOfPlayers
+                    rankKeeperPlayersAndSubstitutes ([ keeperSoFar ] ++ playingSoFar ++ previousEntry.substitutes) numberOfPlayers
             in
             case substitute.substituteWhom of
                 Players ->
@@ -520,33 +456,33 @@ computeNextJournalEntry substitute journalSoFar numberOfPlayers =
 
 
 updateTeamPlayTime : Team -> List PlayJournal -> Int -> Team
-updateTeamPlayTime team journal gameDuration =
+updateTeamPlayTime team journalEntries gameDuration =
     let
-        latestJournal =
-            List.Extra.maximumBy .atMinute journal
+        latestJournalEntry =
+            List.Extra.maximumBy .atMinute journalEntries
 
         calculate =
-            \journal team duration ->
+            \journalEntry t duration ->
                 let
                     minutesPlayedAfterLastSubstitution =
-                        duration - journal.atMinute
+                        duration - journalEntry.atMinute
 
                     present =
-                        updatePlayersTime (journal.keeper :: journal.playing) minutesPlayedAfterLastSubstitution
-                            ++ journal.substitutes
+                        updatePlayersTime minutesPlayedAfterLastSubstitution (journalEntry.keeper :: journalEntry.playing)
+                            ++ journalEntry.substitutes
 
                     notPresent =
-                        List.Extra.filterNot (playerPresent present) team
+                        List.Extra.filterNot (playerPresent present) t
                 in
                 present ++ notPresent
     in
-    case latestJournal of
+    case latestJournalEntry of
         --a journal is mandatory to calculate the new player play times
         Nothing ->
             team
 
-        Just journal ->
-            calculate journal team gameDuration
+        Just entry ->
+            calculate entry team gameDuration
 
 
 teamPlays : Team -> List Player -> Settings -> Team
@@ -566,8 +502,8 @@ playerPresent present player =
     List.any (\p -> p.name == player.name) present
 
 
-chooseKeeperPlayersAndSubstitutes : List Player -> Int -> ( Maybe Player, List Player, List Player )
-chooseKeeperPlayersAndSubstitutes present numberOfPlayers =
+rankKeeperPlayersAndSubstitutes : List Player -> Int -> ( Maybe Player, List Player, List Player )
+rankKeeperPlayersAndSubstitutes present numberOfPlayers =
     case present of
         [] ->
             ( Nothing, [], [] )
@@ -582,13 +518,17 @@ chooseKeeperPlayersAndSubstitutes present numberOfPlayers =
                     List.sortBy .totalPlayTimeInMinutes present
                         --then group by if players played the same amount of time
                         |> List.Extra.groupWhile (\x y -> x.totalPlayTimeInMinutes == y.totalPlayTimeInMinutes)
-                        |> List.map
-                            (List.sortBy .timesKept)
-                        --turn List List Player to List Player
-                        |> List.concat
+                        |> List.concatMap
+                            --players that have played the same time get sorted by the times they kept
+                            (\( player, sameTotalPlayTime ) ->
+                                player
+                                    :: sameTotalPlayTime
+                                    |> List.sortBy .timesKept
+                            )
                         --reverse, so the keeper to be chosen is the head
                         |> List.reverse
 
+                --TODO why compute this twice? why revert twice?
                 substitutes =
                     rankedForPlayTimeDescending
                         |> List.take playersExtra
@@ -614,23 +554,13 @@ chooseKeeper players =
             Just { player | timesKept = player.timesKept + 1 }
 
 
-updatePlayersTime : List Player -> Int -> List Player
-updatePlayersTime players time =
-    let
-        update =
-            \players time acc ->
-                case players of
-                    [] ->
-                        acc
-
-                    head :: tail ->
-                        update tail time ({ head | totalPlayTimeInMinutes = head.totalPlayTimeInMinutes + time } :: acc)
-    in
-    update players time []
+updatePlayersTime : Int -> List Player -> List Player
+updatePlayersTime time players =
+    List.map (updatePlayerTime time) players
 
 
-updatePlayerTime : Player -> Int -> Player
-updatePlayerTime player time =
+updatePlayerTime : Int -> Player -> Player
+updatePlayerTime time player =
     { player | totalPlayTimeInMinutes = player.totalPlayTimeInMinutes + time }
 
 
@@ -650,23 +580,18 @@ substituteAtMinute settings =
         |> List.sortBy .atMinute
         |> List.Extra.groupWhile (\x y -> x.atMinute == y.atMinute)
         |> List.map playerKeeperOrBoth
-        --remove any Nothing occurrences
-        |> List.filterMap identity
         --remove occurences that are at the exact end of the game
         |> List.filter (\s -> s.atMinute /= settings.gameDuration)
 
 
-playerKeeperOrBoth : List Substitute -> Maybe Substitute
-playerKeeperOrBoth tuples =
-    case tuples of
+playerKeeperOrBoth : ( Substitute, List Substitute ) -> Substitute
+playerKeeperOrBoth ( substitute, andMore ) =
+    case andMore of
         [] ->
-            Nothing
+            { atMinute = substitute.atMinute, substituteWhom = substitute.substituteWhom }
 
-        head :: [] ->
-            Just { atMinute = head.atMinute, substituteWhom = head.substituteWhom }
-
-        head :: tail ->
-            Just { atMinute = head.atMinute, substituteWhom = Both }
+        _ ->
+            { atMinute = substitute.atMinute, substituteWhom = Both }
 
 
 cancel : Html Msg
