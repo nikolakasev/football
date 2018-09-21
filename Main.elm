@@ -345,7 +345,7 @@ substitutionView playersIn playersOut =
             (\( out, inn ) ->
                 --same player remains as a substitution in two consecutive moments to substitute
                 if inn.name /= out.name then
-                    [ text (toString playersIn.atMinute ++ " min.: " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
+                    [ text (String.toInt playersIn.atMinute ++ " min.: " ++ inn.name ++ "⇄" ++ out.name), br [] [] ]
 
                 else
                     []
@@ -354,7 +354,7 @@ substitutionView playersIn playersOut =
     )
         ++ --show if there was a change of keepers as well
            (if playersIn.keeper.name /= playersOut.keeper.name then
-                [ text (toString playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
+                [ text (String.toInt playersIn.atMinute ++ " min. (k): " ++ playersIn.keeper.name ++ "⇄" ++ playersOut.keeper.name), br [] [] ]
 
             else
                 []
@@ -384,7 +384,7 @@ minutesToString minutes =
         "0 min."
 
     else if minutes < 60 then
-        toString minutes ++ " min."
+        String.toInt minutes ++ " min."
 
     else if minutes == 60 then
         "1 h."
@@ -394,7 +394,7 @@ minutesToString minutes =
             hours =
                 minutes // 60
         in
-        toString hours ++ " h. " ++ toString (minutes - hours * 60) ++ " min."
+        String.toInt hours ++ " h. " ++ String.toInt (minutes - hours * 60) ++ " min."
 
 
 keptToString : Int -> String
@@ -410,7 +410,7 @@ keptToString times =
             "kept twice"
 
         _ ->
-            "kept " ++ toString times ++ " times"
+            "kept " ++ String.toInt times ++ " times"
 
 
 addPlayerToTeam : Player -> Team -> Team
