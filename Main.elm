@@ -238,7 +238,7 @@ presentTodayView players =
 
 checkbox : Msg -> String -> Html Msg
 checkbox msg name =
-    label []
+    div []
         [ input [ type_ "checkbox", checked True, onClick msg ] []
         , text name
         ]
