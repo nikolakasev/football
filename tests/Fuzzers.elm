@@ -12,21 +12,27 @@ import Shrink
 settings : Fuzzer Settings
 settings =
     let
-        duration =
+        minutesGameLasts =
             90
+
+        minNumberOfPlayers =
+            2
+
+        maxNumberOfPlayers =
+            11
     in
     Fuzz.custom
         --Generator a
         (Random.map4
             Settings
-            (Random.int 1 duration)
-            (Random.int 2 8)
-            (Random.int 1 duration)
-            (Random.int 1 duration)
+            (Random.int 1 minutesGameLasts)
+            (Random.int minNumberOfPlayers maxNumberOfPlayers)
+            (Random.int 1 minutesGameLasts)
+            (Random.int 1 minutesGameLasts)
         )
         --Shrinker a
         (\{ gameDuration, numberOfPlayers, changeKeeper, changePlayer } ->
-            Shrink.map Settings (Shrink.int duration)
+            Shrink.map Settings (Shrink.int minutesGameLasts)
                 |> Shrink.andMap (Shrink.int numberOfPlayers)
                 |> Shrink.andMap (Shrink.int changeKeeper)
                 |> Shrink.andMap (Shrink.int changePlayer)

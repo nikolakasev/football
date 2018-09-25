@@ -3,7 +3,7 @@ module Tests exposing (suite, teamPlaysWith, totalPlayTime)
 import Expect exposing (equal)
 import Fuzz exposing (list)
 import Fuzzers exposing (..)
-import Main exposing (Player, Settings, teamPlays)
+import Main exposing (Player, Settings, Team, teamPlays)
 import Test exposing (..)
 
 
@@ -21,13 +21,14 @@ suite =
 
 
 teamPlaysWith : List Player -> Settings -> Expect.Expectation
-teamPlaysWith team s =
+teamPlaysWith present s =
     let
         teamHasPlayed =
-            teamPlays team team s
+            --everyone is present
+            teamPlays present present s
     in
     --when a generated team doesn't match the generated settings, pass directly
-    if List.length team < s.numberOfPlayers then
+    if List.length present < s.numberOfPlayers then
         Expect.pass
 
     else
@@ -35,7 +36,7 @@ teamPlaysWith team s =
             --total time is always the same: duration * number of players
             (s.gameDuration * s.numberOfPlayers)
             --when the team has played, they've increased their total play time
-            (totalPlayTime teamHasPlayed - totalPlayTime team)
+            (totalPlayTime teamHasPlayed - totalPlayTime present)
 
 
 totalPlayTime : List Player -> Int
