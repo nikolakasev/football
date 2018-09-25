@@ -13,8 +13,8 @@ suite =
         [ describe "total play time"
             -- Nest as many descriptions as you like.
             [ fuzz2 Fuzzers.settings (Fuzz.list Fuzzers.player) "is the sum of time players played" <|
-                \s players ->
-                    teamPlaysWith players s
+                \andSettings players ->
+                    teamPlaysWith players andSettings
             , todo "play time for players not present remains the same"
             ]
         ]

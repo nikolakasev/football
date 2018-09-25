@@ -12,9 +12,8 @@ import Shrink
 settings : Fuzzer Settings
 settings =
     let
-        --TODO randomize this as well
         duration =
-            40
+            90
     in
     Fuzz.custom
         --Generator a
